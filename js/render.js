@@ -89,12 +89,13 @@ export function computePhotoDrawRect(photo, box) {
 // A partir del centro de un rostro detectado (fracción 0..1 del tamaño
 // de la imagen original), calcula el offset que deja ese punto exacto en
 // el centro del círculo — que es donde siempre cae la zona segura, sin
-// importar el tamaño de pin. No hace falta zoom adicional: centrar ya
-// garantiza que el punto quede dentro de la zona segura.
-export function computeFaceCenteredOffset(naturalW, naturalH, faceCenterFrac) {
+// importar el tamaño de pin. `scale` debe ser el mismo que se le vaya a
+// asignar al slot.photo real (ver DEFAULT_PHOTO_SCALE en slotPanel.js) —
+// si no coinciden, el centrado queda desproporcionado.
+export function computeFaceCenteredOffset(naturalW, naturalH, faceCenterFrac, scale = 1) {
   const unitBox = { centerXPx: 0.5, centerYPx: 0.5, cutDiameterPx: 1 };
   const rect = computePhotoDrawRect(
-    { naturalW, naturalH, offsetXFrac: 0, offsetYFrac: 0, scale: 1 },
+    { naturalW, naturalH, offsetXFrac: 0, offsetYFrac: 0, scale },
     unitBox
   );
   return {

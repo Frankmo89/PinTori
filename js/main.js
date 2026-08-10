@@ -1,5 +1,6 @@
 import { runSelfTests } from './selftest.js';
 import { buildSlotGrid } from './editor/slotGrid.js';
+import { buildPinSizePicker } from './editor/pinSizePicker.js';
 import { warmUpFaceDetection } from './face/faceDetect.js';
 import { exportPdf } from './export/pdfExport.js';
 import { exportPng } from './export/pngExport.js';
@@ -20,6 +21,10 @@ await loadPersistedState();
 
 const gridContainer = document.getElementById('slot-grid');
 buildSlotGrid(gridContainer);
+
+buildPinSizePicker(document.getElementById('pin-size-picker'), () => {
+  buildSlotGrid(gridContainer);
+});
 
 // Suscrito recién después de la carga inicial — si no, restaurar el
 // estado guardado dispararía de inmediato un guardado redundante de lo

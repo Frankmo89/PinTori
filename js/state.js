@@ -54,6 +54,17 @@ export function setActiveIndex(index) {
   state.activeIndex = index;
 }
 
+// Cambiar de tamaño de pin no toca el contenido de los slots — los
+// offsets/escala de cada foto están guardados como fracción del
+// diámetro de corte (ver render.js), así que siguen siendo válidos sin
+// importar qué tan grande sea el círculo nuevo. Si el grid nuevo tiene
+// menos celdas que antes, los slots de más simplemente no se muestran
+// hasta que se vuelva a un tamaño con más espacio — no se pierden.
+export function setPinId(pinId) {
+  state.pinId = pinId;
+  notify();
+}
+
 // "Llenar todos con este diseño": copia el contenido del slot `index` a
 // todos los demás. Las fotos comparten el mismo ImageBitmap por
 // referencia — es de solo lectura para dibujar, no hay razón para

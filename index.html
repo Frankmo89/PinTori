@@ -12,10 +12,17 @@
 <body>
   <main>
     <div class="page-header">
-      <h1>PinTori</h1>
+      <div class="brand">
+        <h1>PinTori
+          <svg class="sparkle sparkle-1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
+          <svg class="sparkle sparkle-2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
+          <svg class="sparkle sparkle-3" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
+        </h1>
+      </div>
       <button type="button" id="lang-toggle-btn" class="btn-link" data-i18n="langToggle" aria-label="Switch language / Cambiar idioma">English</button>
     </div>
     <p class="subtitle" data-i18n="subtitle">Toca un círculo para agregar foto, texto, emoji o color.</p>
+    <div id="pin-size-picker" class="pin-size-picker"></div>
     <div id="slot-grid" class="slot-grid"></div>
 
     <div class="export-actions">

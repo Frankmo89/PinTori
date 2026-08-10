@@ -66,6 +66,7 @@ export function buildSlotGrid(container) {
       setActiveIndex(cell.index);
       openSlotPanel(cell.index, slotEl, {
         returnFocusTo: canvas,
+        cutDiameterPx: grid.cutDiameterPx,
         onSlotChange: renderThisSlot,
         onFillAll: () => {
           fillAllFrom(cell.index, grid.count);

@@ -81,7 +81,17 @@ el bundle.
 | `--font-size-base` | 16px | cuerpo |
 | `--font-size-lg` | 20px | texto de botones |
 | `--font-size-xl` | 28px | títulos de sección |
-| `--font-size-xxl` | 40px | título principal |
+| `--font-size-xxl` | 40px | subtítulos grandes |
+| `--font-size-hero` | 56px | el `<h1>` "PinTori" — grande y seguro, no tímido |
+
+### Destellos decorativos
+
+Dos o tres estrellitas de 4 puntas (`.sparkle`), animadas con un titileo
+suave, flotando junto al logo. Inspiradas en una referencia de marca que
+le gustó al usuario (MANA yerba mate) — se tomó únicamente el motivo y
+la confianza tipográfica, **no su paleta**: los destellos usan
+`--color-primary`/`--color-secondary`/`--color-accent`, nunca colores
+saturados fuera del sistema. Respetan `prefers-reduced-motion`.
 
 ---
 

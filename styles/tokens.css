@@ -49,6 +49,7 @@
   --font-size-lg: 20px;
   --font-size-xl: 28px;
   --font-size-xxl: 40px;
+  --font-size-hero: 56px; /* título principal — grande y seguro, ver DESIGN.md */
   --font-weight-regular: 400;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
