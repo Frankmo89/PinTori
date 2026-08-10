@@ -12,6 +12,8 @@
 
 import { renderSheetCanvas } from './sheetRenderer.js';
 import { buildFilename } from './filename.js';
+import { resolveSlotSpec } from '../geometry.js';
+import { getDefaultSlotType } from '../state.js';
 
 const JSPDF_SCRIPT_URL = 'vendor/jspdf/jspdf.umd.min.js';
 
@@ -52,5 +54,5 @@ export async function exportPdf() {
   // contenido de líneas/texto sobre fondo plano.
   const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.95);
   doc.addImage(jpegDataUrl, 'JPEG', 0, 0, grid.sheet.widthMm, grid.sheet.heightMm);
-  doc.save(buildFilename(grid, 'pdf'));
+  doc.save(buildFilename(resolveSlotSpec(getDefaultSlotType()), 'pdf'));
 }

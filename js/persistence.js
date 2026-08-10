@@ -59,7 +59,7 @@ export function schedulePersist() {
 }
 
 async function persistNow() {
-  const { sheetId, pinId, slots } = getState();
+  const { sheetId, defaultSlotType, slots } = getState();
   const lightSlots = {};
 
   for (const [index, slot] of Object.entries(slots)) {
@@ -75,7 +75,7 @@ async function persistNow() {
     }
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ sheetId, pinId, slots: lightSlots }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ sheetId, defaultSlotType, slots: lightSlots }));
 }
 
 // Se llama una vez al arrancar, antes de construir el grid — el grid
@@ -88,7 +88,7 @@ export async function loadPersistedState() {
     const parsed = JSON.parse(raw);
     const state = getState();
     if (parsed.sheetId) state.sheetId = parsed.sheetId;
-    if (parsed.pinId) state.pinId = parsed.pinId;
+    if (parsed.defaultSlotType) state.defaultSlotType = parsed.defaultSlotType;
 
     for (const [indexStr, slot] of Object.entries(parsed.slots || {})) {
       const index = Number(indexStr);

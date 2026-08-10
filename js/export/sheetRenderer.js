@@ -1,11 +1,12 @@
 // Compone la hoja completa en un canvas offscreen a resolución real de
-// 300 DPI: fondo blanco, cada pin (misma drawPin() que usa el editor —
-// cero lógica de dibujo nueva), la regla de calibración impresa, y el
-// texto de instrucciones en el margen.
+// 300 DPI: fondo blanco, cada slot empaquetado en su posición real
+// (mismo drawSlot() que usa el editor — cero lógica de dibujo nueva),
+// la regla de calibración impresa, y el texto de instrucciones en el
+// margen.
 
-import { computeGrid, mmToPx } from '../geometry.js';
-import { getState, getSlot } from '../state.js';
-import { drawPin, FONT_FAMILY } from '../render.js';
+import { computeDefaultSlotCount, packSlots, resolveSlotSpec, specToBox, mmToPx } from '../geometry.js';
+import { getState, getSlot, getDefaultSlotType, getSlotType } from '../state.js';
+import { drawSlot, FONT_FAMILY } from '../render.js';
 import { DPI } from '../constants.js';
 import { t } from '../i18n.js';
 
@@ -21,29 +22,61 @@ const RULER_COLOR = '#555555';
 const BAND_PADDING_MM = 8;
 
 export function renderSheetCanvas() {
-  const { sheetId, pinId } = getState();
-  const grid = computeGrid({ pinId, sheetId });
+  const { sheetId } = getState();
+  const defaultType = getDefaultSlotType();
+  const slotCount = computeDefaultSlotCount({ slotType: defaultType, sheetId });
+
+  const specs = [];
+  for (let index = 0; index < slotCount; index++) {
+    specs.push({ index, spec: resolveSlotSpec(getSlotType(index)) });
+  }
+
+  const packed = packSlots({ specs, sheetId });
 
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(grid.sheetWidthPx);
-  canvas.height = Math.round(grid.sheetHeightPx);
+  canvas.width = Math.round(packed.sheetWidthPx);
+  canvas.height = Math.round(packed.sheetHeightPx);
   const ctx = canvas.getContext('2d');
 
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  for (const cell of grid.cells) {
-    drawPin(ctx, getSlot(cell.index), {
-      centerXPx: cell.centerXPx,
-      centerYPx: cell.centerYPx,
-      cutDiameterPx: grid.cutDiameterPx,
-    });
+  for (const cell of packed.cells) {
+    const box = specToBox(cell.spec, cell.centerXPx, cell.centerYPx, DPI);
+    drawSlot(ctx, getSlot(cell.index), box);
   }
 
-  drawMarginRuler(ctx, grid);
-  drawMarginCaption(ctx, grid);
+  const margins = effectiveMargins(packed);
+  drawMarginRuler(ctx, packed, margins);
+  drawMarginCaption(ctx, packed, margins);
 
-  return { canvas, grid };
+  return { canvas, grid: packed };
+}
+
+// packSlots() no da un solo "margen" por eje como el grid uniforme de
+// antes (formas mixtas pueden dejar espacio distinto en cada fila) —
+// esto reconstruye una cifra equivalente a partir de la caja que
+// realmente ocupa el contenido empaquetado, suficiente para decidir en
+// qué banda va la regla (la misma decisión de siempre: la que tenga más
+// espacio).
+function effectiveMargins(packed) {
+  if (!packed.cells.length) {
+    return { marginXMm: packed.marginMm, marginYMm: packed.marginMm };
+  }
+  let left = Infinity;
+  let right = -Infinity;
+  let top = Infinity;
+  let bottom = -Infinity;
+  for (const cell of packed.cells) {
+    left = Math.min(left, cell.centerXMm - cell.spec.cutWidthMm / 2);
+    right = Math.max(right, cell.centerXMm + cell.spec.cutWidthMm / 2);
+    top = Math.min(top, cell.centerYMm - cell.spec.cutHeightMm / 2);
+    bottom = Math.max(bottom, cell.centerYMm + cell.spec.cutHeightMm / 2);
+  }
+  return {
+    marginXMm: (packed.sheet.widthMm - (right - left)) / 2,
+    marginYMm: (packed.sheet.heightMm - (bottom - top)) / 2,
+  };
 }
 
 // Dibuja la regla siempre igual, en coordenadas locales: eje x = a lo
@@ -100,14 +133,14 @@ function drawRulerLocal(ctx) {
   }
 }
 
-function drawMarginRuler(ctx, grid) {
-  const horizontal = grid.marginYMm >= grid.marginXMm;
+function drawMarginRuler(ctx, packed, margins) {
+  const horizontal = margins.marginYMm >= margins.marginXMm;
   ctx.save();
   if (horizontal) {
-    const yMm = grid.sheet.heightMm - grid.marginYMm / 2;
+    const yMm = packed.sheet.heightMm - margins.marginYMm / 2;
     ctx.translate(mmToPx(BAND_PADDING_MM), mmToPx(yMm));
   } else {
-    const xMm = grid.marginXMm / 2;
+    const xMm = margins.marginXMm / 2;
     ctx.translate(mmToPx(xMm), mmToPx(BAND_PADDING_MM));
     ctx.rotate(Math.PI / 2);
   }
@@ -115,9 +148,9 @@ function drawMarginRuler(ctx, grid) {
   ctx.restore();
 }
 
-function drawMarginCaption(ctx, grid) {
-  const horizontal = grid.marginYMm >= grid.marginXMm;
-  const text = t('printCaption', grid.pin.label, grid.cutDiameterMm, grid.sheet.label);
+function drawMarginCaption(ctx, packed, margins) {
+  const horizontal = margins.marginYMm >= margins.marginXMm;
+  const text = t('printCaption', packed.sheet.label);
 
   ctx.save();
   ctx.fillStyle = RULER_COLOR;
@@ -129,14 +162,14 @@ function drawMarginCaption(ctx, grid) {
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     const xPx = ctx.canvas.width - mmToPx(BAND_PADDING_MM);
-    const yPx = mmToPx(grid.sheet.heightMm - grid.marginYMm / 2);
+    const yPx = mmToPx(packed.sheet.heightMm - margins.marginYMm / 2);
     ctx.fillText(text, xPx, yPx);
   } else {
     // Misma banda izquierda que la regla (que ocupa la parte de arriba),
     // anclado cerca del borde inferior y creciendo hacia arriba —
     // 'right' aquí, con la rotación de +90°, es lo que mantiene el
     // texto DENTRO de la hoja en vez de salirse por el borde inferior.
-    ctx.translate(mmToPx(grid.marginXMm / 2), ctx.canvas.height - mmToPx(BAND_PADDING_MM));
+    ctx.translate(mmToPx(margins.marginXMm / 2), ctx.canvas.height - mmToPx(BAND_PADDING_MM));
     ctx.rotate(Math.PI / 2);
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';

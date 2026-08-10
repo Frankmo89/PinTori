@@ -16,7 +16,7 @@ Dos ajustes al panel de edición de un slot:
 
 2. El panel muestra fotos, texto, tamaño, colores y emojis todo junto y
    se ve denso, no minimalista. Conviértelo en pestañas o un selector
-   simple: Foto / Texto / Emoji / Color / Fondo. Solo una sección visible
+   simple: Foto / Texto / Emoji / Color / Fondo. So
    a la vez. El usuario elige qué tipo de contenido quiere para ese slot
    y solo entonces ve las opciones correspondientes.
 

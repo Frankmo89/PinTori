@@ -1,99 +1,138 @@
-import { computeGrid } from '../geometry.js';
-import { getSlot, setSlot, setActiveIndex, fillAllFrom, getState } from '../state.js';
-import { drawPin } from '../render.js';
+import {
+  computeDefaultSlotCount,
+  resolveSlotSpec,
+  specToBox,
+  EDITOR_DPI,
+} from '../geometry.js';
+import { DPI } from '../constants.js';
+import {
+  getSlot,
+  setSlot,
+  setActiveIndex,
+  fillAllFrom,
+  getState,
+  getDefaultSlotType,
+  getSlotType,
+} from '../state.js';
+import { drawSlot } from '../render.js';
 import { attachPhotoInteraction } from './slotController.js';
 import { openSlotPanel, closeSlotPanel } from './slotPanel.js';
 import { isPhotoLowRes } from '../resolutionCheck.js';
 import { t, onLangChange } from '../i18n.js';
 
-// Tamaño de slot en pantalla: independiente de la escala física de
-// impresión. El editor no necesita verse "a escala real" — solo el
+// El editor no necesita verse "a escala real de impresión" — solo el
 // canvas de exportación (300 DPI) sí, porque ese es el que importa
-// físicamente.
-const EDITOR_DISPLAY_DIAMETER = 180;
-
+// físicamente. Pero ahora que un pin de 85mm y un sticker de 40mm
+// pueden convivir en la misma hoja, sí necesita que las proporciones
+// ENTRE slots sean honestas — por eso cada slot mide su propio tamaño
+// en pantalla (EDITOR_DPI, ~2px/mm) en vez de forzarse todos a la misma
+// caja fija de antes.
 export function buildSlotGrid(container) {
-  const { sheetId, pinId } = getState();
-  const grid = computeGrid({ pinId, sheetId });
-
-  const safeZonePct = (grid.safeZoneMm / grid.cutDiameterMm) * 100;
-  container.style.setProperty('--safe-zone-pct', `${safeZonePct}%`);
-  container.style.gridTemplateColumns = `repeat(${grid.cols}, ${EDITOR_DISPLAY_DIAMETER}px)`;
+  const { sheetId } = getState();
+  const defaultType = getDefaultSlotType();
+  const slotCount = computeDefaultSlotCount({ slotType: defaultType, sheetId });
 
   container.innerHTML = '';
+  container.className = 'slot-grid';
 
-  grid.cells.forEach((cell) => {
-    const slotEl = document.createElement('div');
-    slotEl.className = 'slot';
-    slotEl.dataset.index = String(cell.index);
-    slotEl.style.width = `${EDITOR_DISPLAY_DIAMETER}px`;
-    slotEl.style.height = `${EDITOR_DISPLAY_DIAMETER}px`;
+  for (let index = 0; index < slotCount; index++) {
+    buildSlotElement(container, index, slotCount);
+  }
+}
 
-    const canvas = document.createElement('canvas');
-    canvas.className = 'slot-canvas';
-    canvas.width = EDITOR_DISPLAY_DIAMETER;
-    canvas.height = EDITOR_DISPLAY_DIAMETER;
-    // Teclado: la circunferencia es un botón — Tab llega, Enter/Espacio
-    // abren el panel, igual que un clic.
-    canvas.tabIndex = 0;
-    canvas.setAttribute('role', 'button');
+function buildSlotElement(container, index, slotCount) {
+  const slotType = getSlotType(index);
+  const spec = resolveSlotSpec(slotType);
+  const screenBox = specToBox(spec, 0, 0, EDITOR_DPI);
+  const displayW = Math.round(screenBox.cutWidthPx);
+  const displayH = Math.round(screenBox.cutHeightPx);
 
-    const foldOverlay = document.createElement('div');
+  const slotEl = document.createElement('div');
+  slotEl.className = `slot shape-${spec.shape}`;
+  slotEl.dataset.index = String(index);
+  slotEl.style.width = `${displayW}px`;
+  slotEl.style.height = `${displayH}px`;
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'slot-canvas';
+  canvas.width = displayW;
+  canvas.height = displayH;
+  if (spec.shape === 'rounded-square') {
+    canvas.style.borderRadius = `${screenBox.cornerRadiusPx}px`;
+  }
+  // Teclado: la forma es un botón — Tab llega, Enter/Espacio abren el
+  // panel, igual que un clic.
+  canvas.tabIndex = 0;
+  canvas.setAttribute('role', 'button');
+
+  let foldOverlay = null;
+  if (spec.category === 'pin') {
+    foldOverlay = document.createElement('div');
     foldOverlay.className = 'fold-overlay';
+    const safeZonePct = (spec.safeZoneMm / spec.cutWidthMm) * 100;
+    slotEl.style.setProperty('--safe-zone-pct', `${safeZonePct}%`);
+  }
 
-    const emptyIcon = document.createElement('div');
-    emptyIcon.className = 'slot-empty-icon';
-    emptyIcon.textContent = '+';
-    emptyIcon.setAttribute('aria-hidden', 'true');
+  const emptyIcon = document.createElement('div');
+  emptyIcon.className = 'slot-empty-icon';
+  emptyIcon.textContent = '+';
+  emptyIcon.setAttribute('aria-hidden', 'true');
 
-    const warningBadge = document.createElement('div');
-    warningBadge.className = 'slot-warning-badge';
-    warningBadge.setAttribute('aria-hidden', 'true');
-    warningBadge.textContent = '!';
+  const warningBadge = document.createElement('div');
+  warningBadge.className = 'slot-warning-badge';
+  warningBadge.setAttribute('aria-hidden', 'true');
+  warningBadge.textContent = '!';
 
-    slotEl.append(canvas, foldOverlay, emptyIcon, warningBadge);
-    container.appendChild(slotEl);
+  slotEl.append(canvas);
+  if (foldOverlay) slotEl.append(foldOverlay);
+  slotEl.append(emptyIcon, warningBadge);
+  container.appendChild(slotEl);
 
-    const renderThisSlot = () => renderSlot(cell.index, slotEl, canvas, emptyIcon, warningBadge, grid.cutDiameterPx);
+  const renderThisSlot = () => renderSlot(index, slotEl, canvas, emptyIcon, warningBadge, spec);
+  renderThisSlot();
+
+  attachPhotoInteraction(canvas, index, (idx, newPhoto) => {
+    setSlot(idx, { type: 'photo', photo: newPhoto });
     renderThisSlot();
-
-    attachPhotoInteraction(canvas, cell.index, (idx, newPhoto) => {
-      setSlot(idx, { type: 'photo', photo: newPhoto });
-      renderThisSlot();
-    });
-
-    function openPanelForSlot() {
-      setActiveIndex(cell.index);
-      openSlotPanel(cell.index, slotEl, {
-        returnFocusTo: canvas,
-        cutDiameterPx: grid.cutDiameterPx,
-        onSlotChange: renderThisSlot,
-        onFillAll: () => {
-          fillAllFrom(cell.index, grid.count);
-          renderAllSlots(container, grid.cutDiameterPx);
-        },
-      });
-    }
-
-    // Escucha en el canvas, no en slotEl: el panel se agrega como hijo de
-    // slotEl, así que un clic en el panel también hace bubbling hasta
-    // slotEl. Si el listener estuviera ahí, cada clic dentro del panel
-    // (por ejemplo el input de texto) volvería a llamar a openSlotPanel,
-    // destruyendo y recreando el panel — y con él, el foco del input.
-    canvas.addEventListener('click', () => {
-      if (slotEl.classList.contains('is-adjusting')) return;
-      openPanelForSlot();
-    });
-
-    canvas.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-        e.preventDefault();
-        openPanelForSlot();
-      }
-    });
-
-    onLangChange(renderThisSlot);
   });
+
+  function openPanelForSlot() {
+    setActiveIndex(index);
+    // El aviso de baja resolución compara contra el tamaño REAL de
+    // impresión (300 DPI), no contra la caja chica de pantalla — si no,
+    // nunca dispararía.
+    const printBox = specToBox(spec, 0, 0, DPI);
+    openSlotPanel(index, slotEl, {
+      returnFocusTo: canvas,
+      cutWidthPx: printBox.cutWidthPx,
+      cutHeightPx: printBox.cutHeightPx,
+      onSlotChange: renderThisSlot,
+      onTypeChange: () => buildSlotGrid(container),
+      onFillAll: () => {
+        fillAllFrom(index, slotCount);
+        renderAllSlots(container);
+      },
+    });
+  }
+
+  // Escucha en el canvas, no en slotEl: el panel se agrega como hijo de
+  // slotEl, así que un clic en el panel también hace bubbling hasta
+  // slotEl. Si el listener estuviera ahí, cada clic dentro del panel
+  // (por ejemplo el input de texto) volvería a llamar a openSlotPanel,
+  // destruyendo y recreando el panel — y con él, el foco del input.
+  canvas.addEventListener('click', () => {
+    if (slotEl.classList.contains('is-adjusting')) return;
+    openPanelForSlot();
+  });
+
+  canvas.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      openPanelForSlot();
+    }
+  });
+
+  onLangChange(renderThisSlot);
 }
 
 function slotStatusKey(slot) {
@@ -104,20 +143,21 @@ function slotStatusKey(slot) {
   return 'slotEmpty';
 }
 
-function renderSlot(index, slotEl, canvas, emptyIcon, warningBadge, cutDiameterPx) {
+function renderSlot(index, slotEl, canvas, emptyIcon, warningBadge, spec) {
   const slot = getSlot(index);
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawPin(ctx, slot, {
-    centerXPx: canvas.width / 2,
-    centerYPx: canvas.height / 2,
-    cutDiameterPx: canvas.width,
-  });
+  // Recalcula la caja a la escala de pantalla del canvas — el mismo
+  // specToBox() que usa la exportación, solo que a EDITOR_DPI en vez de
+  // 300. drawSlot() nunca sabe (ni le importa) a qué escala se le llamó.
+  const screenBox = specToBox(spec, canvas.width / 2, canvas.height / 2, EDITOR_DPI);
+  drawSlot(ctx, slot, screenBox);
 
   const hasContent = slot.type !== 'empty' || Boolean(slot.text?.value);
   emptyIcon.style.display = hasContent ? 'none' : 'flex';
 
-  const lowRes = slot.type === 'photo' && isPhotoLowRes(slot.photo, cutDiameterPx);
+  const printBox = specToBox(spec, 0, 0, DPI);
+  const lowRes = slot.type === 'photo' && isPhotoLowRes(slot.photo, printBox.cutWidthPx, printBox.cutHeightPx);
   slotEl.classList.toggle('has-warning', lowRes);
   warningBadge.style.display = lowRes ? 'flex' : 'none';
   if (lowRes) warningBadge.title = t('lowResWarning');
@@ -127,13 +167,14 @@ function renderSlot(index, slotEl, canvas, emptyIcon, warningBadge, cutDiameterP
   canvas.setAttribute('aria-label', t('slotLabel', index + 1, statusText, warningText));
 }
 
-function renderAllSlots(container, cutDiameterPx) {
+function renderAllSlots(container) {
   closeSlotPanel();
   container.querySelectorAll('.slot').forEach((slotEl) => {
     const index = Number(slotEl.dataset.index);
     const canvas = slotEl.querySelector('.slot-canvas');
     const emptyIcon = slotEl.querySelector('.slot-empty-icon');
     const warningBadge = slotEl.querySelector('.slot-warning-badge');
-    renderSlot(index, slotEl, canvas, emptyIcon, warningBadge, cutDiameterPx);
+    const spec = resolveSlotSpec(getSlotType(index));
+    renderSlot(index, slotEl, canvas, emptyIcon, warningBadge, spec);
   });
 }

@@ -4,7 +4,7 @@
 // correctos, porque son la pieza donde un error se traduce directo en
 // "el pin salió mal cortado".
 
-import { mmToPx, computeGrid } from './geometry.js';
+import { mmToPx, computeGrid, packSlots, resolveSlotSpec } from './geometry.js';
 import { GRID_MIN_MARGIN_MM, GRID_MIN_GAP_MM } from './constants.js';
 
 function approxEqual(a, b, tolerance) {
@@ -38,6 +38,20 @@ export function runSelfTests() {
   console.log(
     `A4 en px: ${a4Frank.sheetWidthPx.toFixed(0)} x ${a4Frank.sheetHeightPx.toFixed(0)} (esperado 2480 x 3508)`
   );
+
+  // Prompt 11: packSlots() (empaquetado genérico para formas mixtas)
+  // debe dar EXACTAMENTE las mismas posiciones que computeGrid() (grid
+  // uniforme de siempre) cuando todas las piezas son iguales — si esto
+  // falla, el empaquetado rompió el caso simple que ya funcionaba.
+  const frankSpec = resolveSlotSpec({ category: 'pin', shape: 'circle', pinId: 'frank' });
+  const uniformSpecs = Array.from({ length: letterFrank.count }, (_, i) => ({ index: i, spec: frankSpec }));
+  const packed = packSlots({ specs: uniformSpecs, sheetId: 'letter' });
+  const samePositions =
+    packed.cells.length === letterFrank.cells.length &&
+    packed.cells.every((cell, i) => approxEqual(cell.centerXPx, letterFrank.cells[i].centerXPx, 0.01) &&
+      approxEqual(cell.centerYPx, letterFrank.cells[i].centerYPx, 0.01));
+  console.log(`packSlots() vs computeGrid() en el caso uniforme: ${packed.cells.length} piezas empaquetadas, posiciones ${samePositions ? 'idénticas' : 'DISTINTAS'}`);
+  console.assert(samePositions, 'FALLO: packSlots() debería dar las mismas posiciones que computeGrid() para piezas uniformes');
 
   console.log('--- fin selftest ---');
 }

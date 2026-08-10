@@ -1,83 +1,82 @@
-// Dibuja el contenido de un pin (foto/texto/emoji/color) y su máscara
-// circular, línea de corte y cruz de centro. Esta es la ÚNICA función que
-// dibuja un pin — la usa tanto el editor (a escala de pantalla) como,
-// más adelante, la exportación de la hoja completa (a 300 DPI real). Que
-// sea la misma función es la garantía de que la hoja exportada nunca se
-// vea distinta de lo que el usuario ajustó en pantalla.
+// Dibuja el contenido de un slot (foto/texto/emoji/color) y su máscara,
+// línea de corte y cruz de centro (círculo solamente). Esta es la ÚNICA
+// función que dibuja un slot — la usa tanto el editor (a escala de
+// pantalla) como la exportación de la hoja completa (a 300 DPI real).
+// Que sea la misma función es la garantía de que la hoja exportada
+// nunca se vea distinta de lo que el usuario ajustó en pantalla.
 //
-// El contenido de una foto se guarda en fracciones del diámetro de corte
-// (offsetXFrac/offsetYFrac, scale), no en píxeles absolutos — así el mismo
-// slot se dibuja correcto sin importar si el canvas mide 180px (editor) o
-// ~2500px (exportación 300 DPI).
+// `box` describe la caja de destino en píxeles, sin importar de dónde
+// salió (editor o exportación):
+//   { centerXPx, centerYPx, cutWidthPx, cutHeightPx, shape, cornerRadiusPx }
+// shape: 'circle' | 'square' | 'rounded-square' | 'rectangle'.
+// cutWidthPx === cutHeightPx para círculo/cuadrado/redondeado — solo el
+// rectángulo (etiqueta) tiene proporciones distintas.
+//
+// offsetXFrac/offsetYFrac de una foto son fracción de la imagen YA
+// DIBUJADA (no de la caja) — así el mismo par de valores centra el mismo
+// punto de la foto sin importar la forma, el tamaño o la resolución de
+// la caja destino. Ver computePhotoDrawRect.
 
 export const FONT_FAMILY = "'Nunito', 'Quicksand', sans-serif";
 
-function drawCutGuides(ctx, centerXPx, centerYPx, cutDiameterPx) {
-  const radius = cutDiameterPx / 2;
+function traceShapePath(ctx, box) {
+  const { centerXPx, centerYPx, cutWidthPx, cutHeightPx, shape, cornerRadiusPx } = box;
+  const left = centerXPx - cutWidthPx / 2;
+  const top = centerYPx - cutHeightPx / 2;
+  ctx.beginPath();
+  if (shape === 'circle') {
+    ctx.arc(centerXPx, centerYPx, cutWidthPx / 2, 0, Math.PI * 2);
+  } else if (shape === 'rounded-square') {
+    const r = Math.max(0, Math.min(cornerRadiusPx || 0, cutWidthPx / 2, cutHeightPx / 2));
+    ctx.roundRect(left, top, cutWidthPx, cutHeightPx, r);
+  } else {
+    // square, rectangle
+    ctx.rect(left, top, cutWidthPx, cutHeightPx);
+  }
+  ctx.closePath();
+}
+
+function drawCutGuides(ctx, box) {
+  const refSize = Math.min(box.cutWidthPx, box.cutHeightPx);
 
   ctx.save();
   ctx.strokeStyle = '#999999';
-  ctx.lineWidth = Math.max(1, cutDiameterPx * 0.0025);
-  ctx.setLineDash([cutDiameterPx * 0.015, cutDiameterPx * 0.015]);
-  ctx.beginPath();
-  ctx.arc(centerXPx, centerYPx, radius, 0, Math.PI * 2);
+  ctx.lineWidth = Math.max(1, refSize * 0.0025);
+  ctx.setLineDash([refSize * 0.015, refSize * 0.015]);
+  traceShapePath(ctx, box);
   ctx.stroke();
   ctx.restore();
 
-  const crossSize = cutDiameterPx * 0.04;
-  ctx.save();
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(centerXPx - crossSize, centerYPx);
-  ctx.lineTo(centerXPx + crossSize, centerYPx);
-  ctx.moveTo(centerXPx, centerYPx - crossSize);
-  ctx.lineTo(centerXPx, centerYPx + crossSize);
-  ctx.stroke();
-  ctx.restore();
-}
-
-// Placeholder de slot vacío (usado en la vista de depuración de la hoja
-// completa, antes de que exista un editor con contenido real).
-export function drawPinFrame(ctx, { centerXPx, centerYPx, cutDiameterPx }) {
-  const radius = cutDiameterPx / 2;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(centerXPx, centerYPx, radius, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.clip();
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(centerXPx - radius, centerYPx - radius, cutDiameterPx, cutDiameterPx);
-  ctx.restore();
-  drawCutGuides(ctx, centerXPx, centerYPx, cutDiameterPx);
-}
-
-export function drawGridPreview(ctx, grid) {
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(0, 0, grid.sheetWidthPx, grid.sheetHeightPx);
-  for (const cell of grid.cells) {
-    drawPinFrame(ctx, {
-      centerXPx: cell.centerXPx,
-      centerYPx: cell.centerYPx,
-      cutDiameterPx: grid.cutDiameterPx,
-    });
+  // La cruz de centro es para alinear un cortador CIRCULAR — no aplica
+  // a un corte recto (SPEC 4.2), así que solo se dibuja para círculos.
+  if (box.shape === 'circle') {
+    const crossSize = refSize * 0.04;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(box.centerXPx - crossSize, box.centerYPx);
+    ctx.lineTo(box.centerXPx + crossSize, box.centerYPx);
+    ctx.moveTo(box.centerXPx, box.centerYPx - crossSize);
+    ctx.lineTo(box.centerXPx, box.centerYPx + crossSize);
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
 // Rectángulo donde debe dibujarse la imagen dado su tamaño natural, el
-// zoom del usuario y su offset — en las unidades del `box` que se pase
-// (pantalla o 300 DPI, da igual, todo es relativo a cutDiameterPx).
+// zoom del usuario y su offset.
 export function computePhotoDrawRect(photo, box) {
   const { naturalW, naturalH, offsetXFrac = 0, offsetYFrac = 0, scale = 1 } = photo;
-  // "cover": la imagen siempre llena el círculo completo, nunca deja
+  // "cover": la imagen siempre llena la caja completa, nunca deja
   // huecos blancos en el borde. El usuario puede acercar más (scale > 1)
   // pero no alejar por debajo de este ajuste base.
-  const baseScale = Math.max(box.cutDiameterPx / naturalW, box.cutDiameterPx / naturalH);
+  const baseScale = Math.max(box.cutWidthPx / naturalW, box.cutHeightPx / naturalH);
   const drawScale = baseScale * scale;
   const drawW = naturalW * drawScale;
   const drawH = naturalH * drawScale;
-  const offsetXPx = offsetXFrac * box.cutDiameterPx;
-  const offsetYPx = offsetYFrac * box.cutDiameterPx;
+  const offsetXPx = offsetXFrac * drawW;
+  const offsetYPx = offsetYFrac * drawH;
   return {
     drawW,
     drawH,
@@ -87,38 +86,28 @@ export function computePhotoDrawRect(photo, box) {
 }
 
 // A partir del centro de un rostro detectado (fracción 0..1 del tamaño
-// de la imagen original), calcula el offset que deja ese punto exacto en
-// el centro del círculo — que es donde siempre cae la zona segura, sin
-// importar el tamaño de pin. `scale` debe ser el mismo que se le vaya a
-// asignar al slot.photo real (ver DEFAULT_PHOTO_SCALE en slotPanel.js) —
-// si no coinciden, el centrado queda desproporcionado.
-export function computeFaceCenteredOffset(naturalW, naturalH, faceCenterFrac, scale = 1) {
-  const unitBox = { centerXPx: 0.5, centerYPx: 0.5, cutDiameterPx: 1 };
-  const rect = computePhotoDrawRect(
-    { naturalW, naturalH, offsetXFrac: 0, offsetYFrac: 0, scale },
-    unitBox
-  );
+// de la imagen original), calcula el offset que deja ese punto exacto
+// en el centro de la caja. Como offsetXFrac/offsetYFrac son fracción de
+// la imagen dibujada (no de la caja), este cálculo no depende de la
+// forma ni el tamaño del slot destino — es el mismo para un pin, un
+// sticker cuadrado o una etiqueta rectangular.
+export function computeFaceCenteredOffset(naturalW, naturalH, faceCenterFrac) {
   return {
-    offsetXFrac: rect.drawW * (0.5 - faceCenterFrac.xFrac),
-    offsetYFrac: rect.drawH * (0.5 - faceCenterFrac.yFrac),
+    offsetXFrac: 0.5 - faceCenterFrac.xFrac,
+    offsetYFrac: 0.5 - faceCenterFrac.yFrac,
   };
 }
 
-// Limita offsetXFrac/offsetYFrac para que la foto nunca se despegue del
-// círculo (no se ve blanco en el borde), dado un diámetro de referencia.
-export function clampPhotoOffset(photo, diameterPx) {
-  const box = { centerXPx: diameterPx / 2, centerYPx: diameterPx / 2, cutDiameterPx: diameterPx };
+// Limita offsetXFrac/offsetYFrac para que la foto nunca se despegue de
+// la caja (no se ve blanco en el borde), dada la caja de destino real.
+export function clampPhotoOffset(photo, box) {
   const rect = computePhotoDrawRect({ ...photo, offsetXFrac: 0, offsetYFrac: 0 }, box);
-  const maxXPx = Math.max(0, (rect.drawW - diameterPx) / 2);
-  const maxYPx = Math.max(0, (rect.drawH - diameterPx) / 2);
-  const curXPx = (photo.offsetXFrac || 0) * diameterPx;
-  const curYPx = (photo.offsetYFrac || 0) * diameterPx;
-  const clampedXPx = Math.min(maxXPx, Math.max(-maxXPx, curXPx));
-  const clampedYPx = Math.min(maxYPx, Math.max(-maxYPx, curYPx));
+  const maxXFrac = rect.drawW > 0 ? Math.max(0, (rect.drawW - box.cutWidthPx) / 2 / rect.drawW) : 0;
+  const maxYFrac = rect.drawH > 0 ? Math.max(0, (rect.drawH - box.cutHeightPx) / 2 / rect.drawH) : 0;
   return {
     ...photo,
-    offsetXFrac: diameterPx ? clampedXPx / diameterPx : 0,
-    offsetYFrac: diameterPx ? clampedYPx / diameterPx : 0,
+    offsetXFrac: Math.min(maxXFrac, Math.max(-maxXFrac, photo.offsetXFrac || 0)),
+    offsetYFrac: Math.min(maxYFrac, Math.max(-maxYFrac, photo.offsetYFrac || 0)),
   };
 }
 
@@ -128,8 +117,9 @@ function drawPhoto(ctx, photo, box) {
 }
 
 function drawEmoji(ctx, emoji, box) {
+  const refSize = Math.min(box.cutWidthPx, box.cutHeightPx);
   ctx.save();
-  ctx.font = `${box.cutDiameterPx * 0.5}px sans-serif`;
+  ctx.font = `${refSize * 0.5}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(emoji.char, box.centerXPx, box.centerYPx);
@@ -137,10 +127,14 @@ function drawEmoji(ctx, emoji, box) {
 }
 
 function drawColorFill(ctx, background, box) {
-  const radius = box.cutDiameterPx / 2;
   ctx.save();
   ctx.fillStyle = background.color1 || '#8FBCE6';
-  ctx.fillRect(box.centerXPx - radius, box.centerYPx - radius, box.cutDiameterPx, box.cutDiameterPx);
+  ctx.fillRect(
+    box.centerXPx - box.cutWidthPx / 2,
+    box.centerYPx - box.cutHeightPx / 2,
+    box.cutWidthPx,
+    box.cutHeightPx
+  );
   ctx.restore();
 }
 
@@ -165,8 +159,9 @@ function wrapLines(ctx, text, maxWidth, maxLines) {
 function drawText(ctx, text, box) {
   const value = (text.value || '').trim();
   if (!value) return;
+  const refSize = Math.min(box.cutWidthPx, box.cutHeightPx);
   const fontSizeFrac = text.fontSizeFrac || 0.16;
-  const fontPx = box.cutDiameterPx * fontSizeFrac;
+  const fontPx = refSize * fontSizeFrac;
 
   ctx.save();
   ctx.fillStyle = text.color || '#33363D';
@@ -174,7 +169,7 @@ function drawText(ctx, text, box) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const maxWidth = box.cutDiameterPx * 0.8;
+  const maxWidth = box.cutWidthPx * 0.8;
   const lines = wrapLines(ctx, value, maxWidth, 3);
   const lineHeight = fontPx * 1.15;
   const startY = box.centerYPx - ((lines.length - 1) * lineHeight) / 2;
@@ -184,9 +179,10 @@ function drawText(ctx, text, box) {
   ctx.restore();
 }
 
-// Dibuja el contenido de un slot dentro del clip circular (llamada desde
-// drawPin, ya recortado). El texto se dibuja siempre que exista, encima
-// de foto/emoji/color — así una foto puede llevar texto superpuesto.
+// Dibuja el contenido de un slot dentro del clip de su forma (llamada
+// desde drawSlot, ya recortado). El texto se dibuja siempre que exista,
+// encima de foto/emoji/color — así una foto puede llevar texto
+// superpuesto.
 export function drawSlotContent(ctx, slot, box) {
   if (slot.type === 'photo' && slot.photo) drawPhoto(ctx, slot.photo, box);
   else if (slot.type === 'emoji' && slot.emoji) drawEmoji(ctx, slot.emoji, box);
@@ -195,23 +191,24 @@ export function drawSlotContent(ctx, slot, box) {
   if (slot.text && slot.text.value) drawText(ctx, slot.text, box);
 }
 
-// Función principal: máscara + contenido + guías de corte. Usada por cada
-// canvas de slot en el editor, y (en el prompt de exportación) por el
-// canvas offscreen de la hoja completa.
-export function drawPin(ctx, slot, box) {
-  const radius = box.cutDiameterPx / 2;
-
+// Función principal: máscara de forma + contenido + guías de corte.
+// Usada por cada canvas de slot en el editor, y por el canvas offscreen
+// de la hoja completa en la exportación.
+export function drawSlot(ctx, slot, box) {
+  traceShapePath(ctx, box);
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(box.centerXPx, box.centerYPx, radius, 0, Math.PI * 2);
-  ctx.closePath();
   ctx.clip();
 
   ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(box.centerXPx - radius, box.centerYPx - radius, box.cutDiameterPx, box.cutDiameterPx);
+  ctx.fillRect(
+    box.centerXPx - box.cutWidthPx / 2,
+    box.centerYPx - box.cutHeightPx / 2,
+    box.cutWidthPx,
+    box.cutHeightPx
+  );
 
   drawSlotContent(ctx, slot, box);
   ctx.restore();
 
-  drawCutGuides(ctx, box.centerXPx, box.centerYPx, box.cutDiameterPx);
+  drawCutGuides(ctx, box);
 }

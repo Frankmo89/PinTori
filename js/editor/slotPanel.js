@@ -1,11 +1,13 @@
-// Panel que aparece al tocar un slot: foto, texto, emoji, color, quitar,
-// y "llenar todos con este diseño". Sin menús anidados ni pasos — todo
-// visible a la vez, para que un niño no tenga que leer para encontrarlo.
+// Panel que aparece al tocar un slot. Pestañas — Foto / Texto / Emoji /
+// Fondo / Tipo — para que solo se vea una sección a la vez. "Quitar" y
+// "Llenar todos con este diseño" quedan fuera de las pestañas, siempre
+// visibles.
 
-import { getSlot, setSlot, clearSlot } from '../state.js';
+import { getSlot, setSlot, clearSlot, getDefaultSlotType, setSlotTypeOverride } from '../state.js';
 import { computeFaceCenteredOffset, clampPhotoOffset } from '../render.js';
 import { detectFaceCenterFrac } from '../face/faceDetect.js';
 import { isPhotoLowRes } from '../resolutionCheck.js';
+import { buildTypeSelector } from './typeSelector.js';
 import { t } from '../i18n.js';
 
 const EMOJI_CHOICES = ['😀', '🎉', '🐶', '🌈', '⭐', '❤️', '🎈', '🦄'];
@@ -26,6 +28,14 @@ const DEFAULT_TEXT_SIZE = TEXT_SIZE_CHOICES[1].fontSizeFrac;
 // había a dónde moverse. Se arranca con un poco de zoom de más para que
 // siempre haya margen para arrastrar, sin importar la forma de la foto.
 const DEFAULT_PHOTO_SCALE = 1.15;
+
+const TABS = [
+  { id: 'photo', labelKey: 'photo' },
+  { id: 'text', labelKey: 'text' },
+  { id: 'emoji', labelKey: 'emoji' },
+  { id: 'background', labelKey: 'background' },
+  { id: 'type', labelKey: 'typeTab' },
+];
 
 let openPanelEl = null;
 let outsideClickHandler = null;
@@ -51,7 +61,7 @@ export function closeSlotPanel() {
   }
 }
 
-async function loadImageFromFile(file) {
+async function loadImageFromFile(file, box) {
   try {
     const bitmap = await createImageBitmap(file);
     const photo = {
@@ -71,8 +81,8 @@ async function loadImageFromFile(file) {
     // mismo resultado que un slot que nunca intentó detectar nada.
     const faceCenter = await detectFaceCenterFrac(bitmap);
     if (faceCenter) {
-      const offset = computeFaceCenteredOffset(bitmap.width, bitmap.height, faceCenter, DEFAULT_PHOTO_SCALE);
-      const clamped = clampPhotoOffset({ ...photo, ...offset }, 1000);
+      const offset = computeFaceCenteredOffset(bitmap.width, bitmap.height, faceCenter);
+      const clamped = clampPhotoOffset({ ...photo, ...offset }, box);
       photo.offsetXFrac = clamped.offsetXFrac;
       photo.offsetYFrac = clamped.offsetYFrac;
     }
@@ -83,7 +93,22 @@ async function loadImageFromFile(file) {
   }
 }
 
-export function openSlotPanel(index, slotEl, { onSlotChange, onFillAll, returnFocusTo, cutDiameterPx }) {
+// Qué pestaña abrir por default: la que corresponde al contenido que ya
+// tiene el slot, para que el usuario vea de entrada lo que puso. Un
+// slot vacío abre en Foto — es la acción más común para empezar.
+function defaultTabFor(slot) {
+  if (slot.type === 'photo') return 'photo';
+  if (slot.type === 'emoji') return 'emoji';
+  if (slot.type === 'color') return 'background';
+  if (slot.type === 'text' || slot.text?.value) return 'text';
+  return 'photo';
+}
+
+export function openSlotPanel(
+  index,
+  slotEl,
+  { onSlotChange, onFillAll, onTypeChange, returnFocusTo, cutWidthPx, cutHeightPx }
+) {
   closeSlotPanel();
 
   const panel = document.createElement('div');
@@ -93,35 +118,62 @@ export function openSlotPanel(index, slotEl, { onSlotChange, onFillAll, returnFo
   // en el orden normal de Tab.
   panel.tabIndex = -1;
 
-  const errorEl = document.createElement('p');
-  errorEl.className = 'panel-error';
-  errorEl.hidden = true;
+  const initialSlot = getSlot(index);
+  let activeTab = defaultTabFor(initialSlot);
 
   // El badge "!" en el slot es solo un aviso silencioso — en touch no
   // hay hover para leer su title. Este texto es la explicación real,
-  // visible en cuanto se abre el panel, sin que haya que adivinar.
+  // visible sin importar qué pestaña esté abierta.
   const warningEl = document.createElement('p');
   warningEl.className = 'panel-warning';
   warningEl.hidden = true;
   function refreshWarning() {
     const slot = getSlot(index);
-    const lowRes = slot.type === 'photo' && cutDiameterPx && isPhotoLowRes(slot.photo, cutDiameterPx);
+    const lowRes = slot.type === 'photo' && cutWidthPx && isPhotoLowRes(slot.photo, cutWidthPx, cutHeightPx);
     warningEl.textContent = lowRes ? t('lowResWarning') : '';
     warningEl.hidden = !lowRes;
   }
   refreshWarning();
 
+  // --- Barra de pestañas ---
+  const tabBar = document.createElement('div');
+  tabBar.className = 'panel-tabs';
+  tabBar.setAttribute('role', 'tablist');
+  const tabButtons = {};
+
   // --- Foto ---
-  const photoRow = document.createElement('label');
-  photoRow.className = 'panel-row';
-  photoRow.innerHTML = `<span>${t('photo')}</span>`;
+  const photoPanelEl = document.createElement('div');
+  photoPanelEl.className = 'tab-panel';
+  photoPanelEl.setAttribute('role', 'tabpanel');
+
+  const errorEl = document.createElement('p');
+  errorEl.className = 'panel-error';
+  errorEl.hidden = true;
+
+  // Input de archivo nativo escondido (accesible, no display:none) detrás
+  // de un botón que sí controlamos — el texto nativo "Ningún archivo
+  // seleccionado" se salía de su caja y no se podía acortar de otra forma,
+  // porque es UI del navegador, no algo que este CSS controle.
+  const photoLabel = document.createElement('label');
+  photoLabel.className = 'file-upload-btn';
   const photoInput = document.createElement('input');
   photoInput.type = 'file';
   photoInput.accept = 'image/*';
+  photoInput.className = 'visually-hidden-input';
+  const photoLabelText = document.createElement('span');
+  photoLabelText.textContent = t('photo');
+  photoLabel.append(photoInput, photoLabelText);
+
+  const fileNameEl = document.createElement('p');
+  fileNameEl.className = 'file-name-display';
+  fileNameEl.hidden = true;
+
   photoInput.addEventListener('change', async () => {
     const file = photoInput.files?.[0];
     if (!file) return;
-    const { photo, error } = await loadImageFromFile(file);
+    fileNameEl.textContent = file.name;
+    fileNameEl.hidden = false;
+    const { photo, error } = await loadImageFromFile(file, { cutWidthPx, cutHeightPx });
     if (error) {
       errorEl.textContent = error;
       errorEl.hidden = false;
@@ -132,14 +184,19 @@ export function openSlotPanel(index, slotEl, { onSlotChange, onFillAll, returnFo
     refreshWarning();
     onSlotChange();
   });
-  photoRow.appendChild(photoInput);
+
+  photoPanelEl.append(photoLabel, fileNameEl, errorEl);
 
   // --- Texto ---
+  const textPanelEl = document.createElement('div');
+  textPanelEl.className = 'tab-panel';
+  textPanelEl.setAttribute('role', 'tabpanel');
+
   // El color y el tamaño de letra se guardan aparte del valor — antes
   // cada tecla en el campo de texto los pisaba de vuelta al default,
   // porque el handler de 'input' los hardcodeaba en vez de leer el
   // estilo ya elegido.
-  const existingText = getSlot(index).text;
+  const existingText = initialSlot.text;
   let textColor = existingText?.color || DEFAULT_TEXT_COLOR;
   let textFontSizeFrac = existingText?.fontSizeFrac || DEFAULT_TEXT_SIZE;
 
@@ -202,10 +259,15 @@ export function openSlotPanel(index, slotEl, { onSlotChange, onFillAll, returnFo
     textColorRow.appendChild(btn);
   });
 
+  textPanelEl.append(textRow, textSizeRow, textColorRow);
+
   // --- Emoji ---
+  const emojiPanelEl = document.createElement('div');
+  emojiPanelEl.className = 'tab-panel';
+  emojiPanelEl.setAttribute('role', 'tabpanel');
+
   // Marca cuál es el elegido ahora mismo — antes ningún botón mostraba
   // selección activa, había que adivinar qué estaba puesto.
-  const currentSlotForActive = getSlot(index);
   const emojiRow = document.createElement('div');
   emojiRow.className = 'panel-row emoji-row';
   const emojiButtons = [];
@@ -214,7 +276,7 @@ export function openSlotPanel(index, slotEl, { onSlotChange, onFillAll, returnFo
     btn.type = 'button';
     btn.className = 'emoji-btn';
     btn.textContent = char;
-    const isActive = currentSlotForActive.type === 'emoji' && currentSlotForActive.emoji?.char === char;
+    const isActive = initialSlot.type === 'emoji' && initialSlot.emoji?.char === char;
     btn.setAttribute('aria-pressed', String(isActive));
     if (isActive) btn.classList.add('is-active');
     btn.addEventListener('click', () => {
@@ -227,8 +289,13 @@ export function openSlotPanel(index, slotEl, { onSlotChange, onFillAll, returnFo
     emojiRow.appendChild(btn);
     emojiButtons.push(btn);
   });
+  emojiPanelEl.append(emojiRow);
 
-  // --- Color ---
+  // --- Fondo (color de relleno) ---
+  const backgroundPanelEl = document.createElement('div');
+  backgroundPanelEl.className = 'tab-panel';
+  backgroundPanelEl.setAttribute('role', 'tabpanel');
+
   const colorRow = document.createElement('div');
   colorRow.className = 'panel-row color-row';
   COLOR_CHOICES.forEach((hex) => {
@@ -236,7 +303,7 @@ export function openSlotPanel(index, slotEl, { onSlotChange, onFillAll, returnFo
     btn.type = 'button';
     btn.className = 'swatch';
     btn.style.background = hex;
-    const isActive = currentSlotForActive.type === 'color' && currentSlotForActive.background?.color1 === hex;
+    const isActive = initialSlot.type === 'color' && initialSlot.background?.color1 === hex;
     btn.setAttribute('aria-pressed', String(isActive));
     if (isActive) btn.classList.add('is-active');
     btn.addEventListener('click', () => {
@@ -258,8 +325,42 @@ export function openSlotPanel(index, slotEl, { onSlotChange, onFillAll, returnFo
     onSlotChange();
   });
   colorRow.appendChild(colorInput);
+  backgroundPanelEl.append(colorRow);
 
-  // --- Acciones ---
+  // --- Tipo (Pin / Sticker / Etiqueta) ---
+  const typePanelEl = buildTypeTab(index, onTypeChange);
+
+  // --- Ensamblar pestañas ---
+  const tabPanels = {
+    photo: photoPanelEl,
+    text: textPanelEl,
+    emoji: emojiPanelEl,
+    background: backgroundPanelEl,
+    type: typePanelEl,
+  };
+
+  function selectTab(tabId) {
+    activeTab = tabId;
+    TABS.forEach(({ id }) => {
+      const isActive = id === tabId;
+      tabPanels[id].hidden = !isActive;
+      tabButtons[id].classList.toggle('is-active', isActive);
+      tabButtons[id].setAttribute('aria-selected', String(isActive));
+    });
+  }
+
+  TABS.forEach(({ id, labelKey }) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-tab';
+    btn.textContent = t(labelKey);
+    btn.setAttribute('role', 'tab');
+    btn.addEventListener('click', () => selectTab(id));
+    tabBar.appendChild(btn);
+    tabButtons[id] = btn;
+  });
+
+  // --- Acciones (siempre visibles, fuera de las pestañas) ---
   const actions = document.createElement('div');
   actions.className = 'panel-actions';
 
@@ -270,6 +371,7 @@ export function openSlotPanel(index, slotEl, { onSlotChange, onFillAll, returnFo
   clearBtn.addEventListener('click', () => {
     clearSlot(index);
     textInput.value = '';
+    fileNameEl.hidden = true;
     refreshWarning();
     onSlotChange();
   });
@@ -284,7 +386,9 @@ export function openSlotPanel(index, slotEl, { onSlotChange, onFillAll, returnFo
 
   actions.append(clearBtn, fillAllBtn);
 
-  panel.append(photoRow, textRow, textSizeRow, textColorRow, emojiRow, colorRow, errorEl, warningEl, actions);
+  panel.append(tabBar, photoPanelEl, textPanelEl, emojiPanelEl, backgroundPanelEl, typePanelEl, warningEl, actions);
+  selectTab(activeTab);
+
   slotEl.appendChild(panel);
   openPanelEl = panel;
   returnFocusTarget = returnFocusTo || null;
@@ -307,4 +411,36 @@ export function openSlotPanel(index, slotEl, { onSlotChange, onFillAll, returnFo
     if (e.key === 'Escape') closeSlotPanel();
   };
   document.addEventListener('keydown', escapeHandler);
+}
+
+function buildTypeTab(index, onTypeChange) {
+  const panelEl = document.createElement('div');
+  panelEl.className = 'tab-panel';
+  panelEl.setAttribute('role', 'tabpanel');
+
+  const resetBtn = document.createElement('button');
+  resetBtn.type = 'button';
+  resetBtn.className = 'btn-outline';
+  resetBtn.textContent = t('useSheetDefault');
+
+  const selector = buildTypeSelector({
+    getValue: () => getSlot(index).slotTypeOverride || getDefaultSlotType(),
+    onChange: (next) => {
+      setSlotTypeOverride(index, next);
+      selector.refresh();
+      resetBtn.hidden = !getSlot(index).slotTypeOverride;
+      onTypeChange();
+    },
+  });
+
+  resetBtn.addEventListener('click', () => {
+    setSlotTypeOverride(index, null);
+    selector.refresh();
+    resetBtn.hidden = true;
+    onTypeChange();
+  });
+  resetBtn.hidden = !getSlot(index).slotTypeOverride;
+
+  panelEl.append(selector.element, resetBtn);
+  return panelEl;
 }

@@ -4,7 +4,7 @@
 // hace que esto funcione igual con mouse y con dedo sin duplicar lógica.
 
 import { getSlot } from '../state.js';
-import { clampPhotoOffset } from '../render.js';
+import { clampPhotoOffset, computePhotoDrawRect } from '../render.js';
 
 function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -21,6 +21,19 @@ export function attachPhotoInteraction(canvasEl, index, onChange) {
   let gestureMoved = false;
 
   const slotEl = canvasEl.closest('.slot');
+
+  // La caja real del slot (puede no ser cuadrada — una etiqueta
+  // rectangular, por ejemplo). clientWidth/clientHeight ya reflejan la
+  // forma real porque slotGrid.js dimensiona el canvas en proporción a
+  // sus mm reales, no a un cuadrado fijo.
+  function currentBox() {
+    return {
+      centerXPx: (canvasEl.clientWidth || canvasEl.width) / 2,
+      centerYPx: (canvasEl.clientHeight || canvasEl.height) / 2,
+      cutWidthPx: canvasEl.clientWidth || canvasEl.width,
+      cutHeightPx: canvasEl.clientHeight || canvasEl.height,
+    };
+  }
 
   // Si el usuario arrastró o hizo pellizco, el "click" que dispara el
   // navegador al soltar no debe abrir el panel de edición — se sentiría
@@ -66,17 +79,22 @@ export function attachPhotoInteraction(canvasEl, index, onChange) {
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const photo = currentPhoto();
     if (!photo) return;
+    const box = currentBox();
 
     if (pointers.size === 2 && pinchStart) {
       const pts = [...pointers.values()];
       const ratio = distance(pts[0], pts[1]) / pinchStart.dist;
       const newScale = clamp(pinchStart.scale * ratio, 1, 4);
       gestureMoved = true;
-      onChange(index, { ...photo, scale: newScale });
+      onChange(index, clampPhotoOffset({ ...photo, scale: newScale }, box));
     } else if (pointers.size === 1 && dragStart) {
-      const diameterPx = canvasEl.clientWidth || canvasEl.width;
-      const dxFrac = (e.clientX - dragStart.x) / diameterPx;
-      const dyFrac = (e.clientY - dragStart.y) / diameterPx;
+      // offsetXFrac/offsetYFrac son fracción de la imagen YA DIBUJADA
+      // (no de la caja) — hay que convertir el arrastre en px de
+      // pantalla a fracción del ancho/alto que la foto ocupa dibujada,
+      // no del ancho/alto del slot.
+      const rect = computePhotoDrawRect({ ...photo, offsetXFrac: 0, offsetYFrac: 0 }, box);
+      const dxFrac = rect.drawW > 0 ? (e.clientX - dragStart.x) / rect.drawW : 0;
+      const dyFrac = rect.drawH > 0 ? (e.clientY - dragStart.y) / rect.drawH : 0;
       if (Math.abs(e.clientX - dragStart.x) > 3 || Math.abs(e.clientY - dragStart.y) > 3) {
         gestureMoved = true;
       }
@@ -85,7 +103,7 @@ export function attachPhotoInteraction(canvasEl, index, onChange) {
         offsetXFrac: dragStart.offsetXFrac + dxFrac,
         offsetYFrac: dragStart.offsetYFrac + dyFrac,
       };
-      onChange(index, clampPhotoOffset(moved, diameterPx));
+      onChange(index, clampPhotoOffset(moved, box));
     }
   });
 
@@ -117,9 +135,8 @@ export function attachPhotoInteraction(canvasEl, index, onChange) {
       if (!photo) return;
       e.preventDefault();
       const delta = -e.deltaY * 0.0015;
-      const diameterPx = canvasEl.clientWidth || canvasEl.width;
       const newScale = clamp((photo.scale || 1) * (1 + delta), 1, 4);
-      onChange(index, clampPhotoOffset({ ...photo, scale: newScale }, diameterPx));
+      onChange(index, clampPhotoOffset({ ...photo, scale: newScale }, currentBox()));
     },
     { passive: false }
   );

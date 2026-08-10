@@ -59,17 +59,74 @@ safe zone ≈ finished − 12 mm.
 
 300 DPI, always. Never resample the sheet down before export.
 
-### Grid
+### Grid (circle-only sheets)
 
-Computed dynamically from sheet size and cut diameter. Do not hardcode 2×3.
-Minimum 6 mm gap between circles, minimum 8 mm page margin.
+When every slot on the sheet is a circle of the same size, layout stays a
+uniform grid, computed dynamically from sheet size and cut diameter — do not
+hardcode 2×3. Minimum 6 mm gap between circles, minimum 6 mm page margin.
 For 85 mm circles on Letter this lands on 2 columns × 3 rows = 6 pins.
+
+This uniform-grid path must keep working exactly as-is once mixed shapes are
+introduced (section 4, below) — mixed-shape sheets use packing instead, but a
+sheet with only one shape and one size is the common case and should never
+regress to a worse layout than this grid produces today.
 
 ---
 
-## 4. Feature list — v1
+## 4. Shapes
 
-### 4.1 The editor (central feature)
+v1 only supported circles mapped to a physical button press. v2 adds flat
+shapes for other paper products (stickers, cards, labels) that don't get
+pressed into a button.
+
+### 4.1 Circle
+
+The only shape that maps to a real physical product (Frank's machine and the
+other button presses). Keeps everything already built for it:
+
+- Cut diameter + safe zone, per the size table above
+- Dimmed fold-under ring between safe zone and cut edge while adjusting —
+  still the single most important UI decision in the app
+- Faint center crosshair, for aligning a circle cutter
+
+### 4.2 Flat shapes
+
+Square, rectangle, triangle, and rounded-corner square. These are **not**
+pressed into anything — there's no edge that folds behind a button back — so:
+
+- No safe zone, no dimmed fold ring. The design goes right up to the cut
+  edge, because there's nothing behind that edge to lose it to.
+- No center crosshair — that mark exists specifically to align a circle
+  cutter, which doesn't apply to a straight cut.
+- Just a dashed cut line on the shape's own outline (rectangle outline,
+  triangle outline, rounded-rect outline).
+
+### 4.3 Sizing
+
+For every shape, the user picks a size in mm freely within a reasonable
+range (roughly 15–120 mm per side/diameter), not limited to the five fixed
+button sizes in the table above. Those five sizes stay exactly as they are
+and stay circle-only — they're real physical button presses, not a starting
+point to generalize away.
+
+### 4.4 Grid becomes packing
+
+The moment a sheet mixes shapes and/or sizes, "grid" stops being the right
+model — it's a 2D bin-packing problem: given a set of slots with different
+shapes and sizes, place them on the sheet maximizing use of space while
+respecting the minimum page margin and minimum gap between pieces.
+
+This is a **documented requirement, not a solved one** — the packing
+algorithm itself is built in a later implementation pass. It does not need
+to be optimal, but it does need to be stable: the same input (same set of
+shapes/sizes in the same order) must always produce the same layout, so a
+user who regenerates doesn't get a surprise.
+
+---
+
+## 5. Feature list — v1/v2
+
+### 5.1 The editor (central feature)
 
 A grid of slots, one per pin that fits on the sheet. Each slot is independent.
 
@@ -81,53 +138,52 @@ Each slot can hold:
 
 A slot may combine a photo with text laid over it.
 
-Empty slots print as blank white circles with only the cut guide. Never block
-the generate action because slots are empty.
+Empty slots print as blank shapes with only the cut guide. Never block the
+generate action because slots are empty.
 
-### 4.2 Per-slot adjustment
+### 5.2 Per-slot adjustment
 
 Inside each slot the user can:
 - Drag to reposition the image
 - Pinch or scroll to zoom
 - Rotate (optional, low priority)
 
-**While adjusting, the fold-under ring must be visibly dimmed** — a translucent
-dark overlay between the safe-zone circle and the cut circle. This is the single
-most important UI decision in the app. It teaches bleed without a word of
-explanation.
+**While adjusting a circle slot, the fold-under ring must be visibly
+dimmed** — a translucent dark overlay between the safe-zone circle and the
+cut circle. Flat shapes have no equivalent overlay (see 4.2).
 
-### 4.3 Duplicate
+### 5.3 Duplicate
 
 One control: "Fill all slots with this design." Fills every slot from the
 selected one. Common case for people making a batch of identical pins.
 
-### 4.4 Resolution warning
+### 5.4 Resolution warning
 
-Before generating, check each photo. If the source image has fewer pixels than
-needed to fill the cut circle at 300 DPI, mark that slot with a soft warning
+Before generating, check each photo. If the source image has fewer pixels
+than needed to fill the slot at 300 DPI, mark that slot with a soft warning
 ("This photo may print blurry"). Warn, do not block.
 
-### 4.5 Sheet generation
+### 5.5 Sheet generation
 
 Renders an offscreen canvas at full 300 DPI resolution containing:
 - White background
-- Each slot's design, circular-masked, at exact cut diameter
-- A thin gray dashed cut line at the cut diameter
-- A faint center crosshair inside each circle, for aligning a circle cutter
+- Each slot's design, masked to its shape, at exact cut size
+- A thin gray dashed cut line on the shape's outline
+- A faint center crosshair inside each **circle** slot only (see 4.2)
 - **A calibration ruler in the page margin** — a printed scale with labeled
   centimeter and inch marks, so the user can hold a physical ruler against the
   printed page and confirm the scale came out right
 - A small line of text in the margin: the button size, the sheet size, and
   "Print at 100% — do not scale"
 
-### 4.6 Export
+### 5.6 Export
 
 - PDF at 300 DPI (primary — most reliable for exact scale)
 - PNG at 300 DPI (fallback)
 
 Filename should include size and date, e.g. `pintori-70mm-2026-08-09.pdf`.
 
-### 4.7 Print guidance
+### 5.7 Print guidance
 
 On the download screen, short and plain:
 - Print at 100% scale, turn off "fit to page"
@@ -135,22 +191,23 @@ On the download screen, short and plain:
 - Use 120–160 gsm coated or photo paper
 - Cut on the dashed line with a circle cutter if possible
 
-### 4.8 Session persistence
+### 5.8 Session persistence
 
 Save work to browser storage so an accidental refresh does not wipe the sheet.
 Nothing leaves the device.
 
 ---
 
-## 5. The AI/ML component
+## 6. The AI/ML component
 
 Automatic face detection to center the crop.
 
-- Model runs entirely in the browser (MediaPipe Face Detector, or face-api.js
-  as fallback). No API calls.
-- When a photo is added, detect faces. If one or more are found, set the initial
-  crop so faces sit inside the safe zone, not just centered on the image's
-  geometric middle.
+- Model runs entirely in the browser (face-api.js — see README.md for why
+  this was chosen over MediaPipe). No API calls.
+- When a photo is added, detect faces. If one or more are found, set the
+  initial crop so faces sit inside the visible area of the slot's shape —
+  the safe zone for circles, the shape's own bounds for flat shapes — not
+  just centered on the image's geometric middle.
 - Silent by default. No extra button, no "AI" badge in the child's view.
   It should feel like the app just knows.
 - The user can still drag and zoom afterward — detection sets the starting
@@ -162,18 +219,18 @@ real client-side inference solving a real usability problem.
 
 ---
 
-## 6. Non-goals for v1
+## 7. Non-goals for v1/v2
 
 Do not build these, even if they seem easy:
 - Filters, stickers, clipart libraries
 - User accounts or cloud saving
 - Social sharing
 - Ordering physical pins
-- Multi-page sheet management (one sheet at a time is fine for v1)
+- Multi-page sheet management (one sheet at a time is fine)
 
 ---
 
-## 7. Technical constraints
+## 8. Technical constraints
 
 - Static site. No backend. Deploys to Cloudflare Pages from GitHub.
 - Canvas API for all image work. jsPDF for PDF export.
@@ -185,8 +242,9 @@ Do not build these, even if they seem easy:
 
 ---
 
-## 8. Definition of done for v1
+## 9. Definition of done
 
 A child can open the URL, add six photos, see each face centered without
 touching anything, adjust one if they want, press one button, and get a PDF
-that prints at exactly the right size on the first try.
+that prints at exactly the right size on the first try — whether the sheet
+is all circles or a mix of circles and flat shapes.

@@ -1,13 +1,26 @@
+/* flex-wrap, no grid de columnas fijas: un pin de 85mm y un sticker de
+   40mm ya no tienen por qué caber en la misma celda — cada slot mide su
+   propio tamaño en proporción a sus mm reales (ver EDITOR_PX_PER_MM en
+   geometry.js) y el navegador acomoda el flujo solo. */
 .slot-grid {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
-  justify-content: start;
 }
 
 .slot {
   position: relative;
-  border-radius: 50%;
   touch-action: none; /* el navegador no debe hacer scroll/zoom de página al arrastrar o pellizcar un slot */
+}
+
+.slot.shape-circle {
+  border-radius: 50%;
+}
+
+.slot.shape-square,
+.slot.shape-rectangle,
+.slot.shape-rounded-square {
+  border-radius: 0; /* redondeado real: JS pone el radio exacto inline, en px, según sus mm */
 }
 
 .slot-canvas {
@@ -15,9 +28,18 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
   cursor: grab;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.slot.shape-circle .slot-canvas {
+  border-radius: 50%;
+}
+
+.slot.shape-square .slot-canvas,
+.slot.shape-rectangle .slot-canvas,
+.slot.shape-rounded-square .slot-canvas {
+  border-radius: 0;
 }
 
 .slot.is-adjusting .slot-canvas {
@@ -121,9 +143,101 @@
   padding: var(--space-1);
 }
 
-.panel-row input[type='file'] {
-  flex: 1;
+/* Pestañas del panel: Foto / Texto / Emoji / Fondo, una sección visible
+   a la vez, en vez de todo apilado y denso. */
+.panel-tabs {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.panel-tab {
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  min-height: 40px;
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+}
+
+.panel-tab.is-active {
+  color: var(--color-primary-text);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.panel-tab:focus-visible {
+  outline: 3px solid var(--color-primary-text);
+  outline-offset: 2px;
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Sin esto, [hidden] pierde contra el display:flex de arriba — misma
+   especificidad, y esta hoja se carga después que la del user-agent. */
+.tab-panel[hidden] {
+  display: none;
+}
+
+/* Botón de foto: reemplaza al <input type="file"> nativo, cuyo texto
+   "Ningún archivo seleccionado" se salía de su caja y no se puede
+   acortar — es UI del navegador, no algo que este CSS controle. El
+   input real sigue ahí, invisible pero enfocable y operable por
+   teclado (no es display:none). */
+.file-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  min-height: 44px;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.file-upload-btn:hover {
+  background: var(--color-bg);
+}
+
+.file-upload-btn:has(.visually-hidden-input:focus-visible) {
+  outline: 3px solid var(--color-primary-text);
+  outline-offset: 2px;
+}
+
+.visually-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.file-name-display {
+  margin: 0;
+  max-width: 100%;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .emoji-row {
@@ -208,6 +322,59 @@
 
 .text-color-swatch {
   border: 1.5px solid var(--color-border);
+}
+
+.type-selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.type-category-row {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.type-category-btn {
+  flex: 1;
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  min-height: 44px;
+  padding: var(--space-1);
+  cursor: pointer;
+}
+
+.type-category-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.type-category-btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.type-category-btn:focus-visible {
+  outline: 3px solid var(--color-primary-text);
+  outline-offset: 2px;
+}
+
+.range-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+
+.range-row input[type='range'] {
+  width: 100%;
+  height: 44px;
+  cursor: pointer;
 }
 
 .panel-error {

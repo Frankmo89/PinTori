@@ -1,17 +1,23 @@
 // Estado central del editor. Sin framework: un objeto simple con funciones
 // de acceso. El grid (columnas/filas/posiciones) NO vive aquí — se deriva
-// siempre de geometry.js a partir de sheetId+pinId, así nunca se
+// siempre de geometry.js a partir de sheetId+defaultSlotType, así nunca se
 // desincroniza de los slots reales.
+//
+// `defaultSlotType` es la categoría/forma/tamaño que aplica a todo slot
+// que no tenga su propio override — lo que fija el picker de arriba.
+// Cada slot puede tener su propio `slotTypeOverride` (Pin/Sticker/
+// Etiqueta con su forma y tamaño), independiente del default — así
+// conviven distintos tipos en la misma hoja.
 
 const state = {
   sheetId: 'letter',
-  pinId: 'frank',
+  defaultSlotType: { category: 'pin', shape: 'circle', pinId: 'frank', sizeMm: null, sizeMm2: null },
   slots: {},
   activeIndex: null,
 };
 
 function emptySlot() {
-  return { type: 'empty' };
+  return { type: 'empty', slotTypeOverride: null };
 }
 
 export function getState() {
@@ -45,7 +51,10 @@ export function setSlot(index, data) {
 }
 
 export function clearSlot(index) {
-  state.slots[index] = emptySlot();
+  const current = getSlot(index);
+  // Quitar contenido no debe quitar el tipo (Pin/Sticker/Etiqueta) que
+  // el usuario ya eligió para ese slot — son dos cosas independientes.
+  state.slots[index] = { ...emptySlot(), slotTypeOverride: current.slotTypeOverride };
   notify();
   return state.slots[index];
 }
@@ -54,27 +63,40 @@ export function setActiveIndex(index) {
   state.activeIndex = index;
 }
 
-// Cambiar de tamaño de pin no toca el contenido de los slots — los
-// offsets/escala de cada foto están guardados como fracción del
-// diámetro de corte (ver render.js), así que siguen siendo válidos sin
-// importar qué tan grande sea el círculo nuevo. Si el grid nuevo tiene
-// menos celdas que antes, los slots de más simplemente no se muestran
-// hasta que se vuelva a un tamaño con más espacio — no se pierden.
-export function setPinId(pinId) {
-  state.pinId = pinId;
-  notify();
-}
-
 // "Llenar todos con este diseño": copia el contenido del slot `index` a
-// todos los demás. Las fotos comparten el mismo ImageBitmap por
-// referencia — es de solo lectura para dibujar, no hay razón para
-// clonarlo.
+// todos los demás. El tipo (forma/tamaño) de cada slot NO se toca —
+// llenar con una foto no debe convertir un sticker en un pin.
 export function fillAllFrom(index, totalCount) {
   const source = getSlot(index);
   if (source.type === 'empty' && !source.text?.value) return;
+  const { slotTypeOverride, ...content } = source;
   for (let i = 0; i < totalCount; i++) {
     if (i === index) continue;
-    state.slots[i] = { ...source };
+    const existing = getSlot(i);
+    state.slots[i] = { ...content, slotTypeOverride: existing.slotTypeOverride };
   }
   notify();
+}
+
+export function getDefaultSlotType() {
+  return state.defaultSlotType;
+}
+
+export function setDefaultSlotType(slotType) {
+  state.defaultSlotType = slotType;
+  notify();
+}
+
+// El tipo efectivo de un slot: su propio override, o el default global
+// si nunca se cambió. Todo el código de render/empaquetado llama a
+// esta función en vez de leer slot.slotTypeOverride directo, para que
+// la regla "sin override = usa el default" viva en un solo lugar.
+export function getSlotType(index) {
+  const slot = getSlot(index);
+  return slot.slotTypeOverride || state.defaultSlotType;
+}
+
+// null limpia el override — el slot vuelve a seguir al default global.
+export function setSlotTypeOverride(index, slotType) {
+  setSlot(index, { slotTypeOverride: slotType });
 }

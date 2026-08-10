@@ -24,3 +24,31 @@ export const SHEET_SIZES = [
 // a moverse, revisar de nuevo contra la tabla de PIN_SIZES x SHEET_SIZES.
 export const GRID_MIN_MARGIN_MM = 6;
 export const GRID_MIN_GAP_MM = 6;
+
+// Categorías de producto (SPEC sección 4). Pin es la única con producto
+// físico real detrás (zona segura, anillo de doblez, cruz de centro) —
+// sticker y etiqueta son corte directo, sin bleed. Los rangos de tamaño
+// son una propuesta inicial, no medidos contra una hoja de etiquetas
+// real todavía; ajustar aquí si no calzan en la práctica.
+export const PRODUCT_CATEGORIES = {
+  pin: {
+    id: 'pin',
+    shapes: ['circle'],
+    hasBleed: true, // zona segura + anillo de doblez + cruz de centro
+  },
+  sticker: {
+    id: 'sticker',
+    shapes: ['circle', 'square', 'rounded-square'],
+    hasBleed: false,
+    sizeRangeMm: { min: 20, max: 100 },
+  },
+  label: {
+    id: 'label',
+    shapes: ['rectangle'],
+    hasBleed: false,
+    widthRangeMm: { min: 25, max: 120 },
+    heightRangeMm: { min: 15, max: 80 },
+  },
+};
+
+export const ROUNDED_SQUARE_CORNER_RATIO = 0.15;
