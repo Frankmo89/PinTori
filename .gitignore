@@ -1,0 +1,13 @@
+# Configuración local de Claude Code (no es del proyecto)
+.claude/
+
+# Sistemas operativos
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Por si alguna vez se usa una herramienta de build local
+node_modules/

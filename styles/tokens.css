@@ -1,0 +1,69 @@
+/* PinTori — Design tokens
+   Ver DESIGN.md para la razón detrás de cada decisión. */
+
+:root {
+  /* ---- Superficie y texto ---- */
+  --color-bg: #FBFCFE;
+  --color-surface: #FFFFFF;
+  --color-text: #33363D;
+  --color-text-muted: #6B7078;
+  --color-border: #E3E8EF;
+
+  /* ---- Paleta pastel: azul / verde / amarillo ----
+     Regla: ningún color de esta paleta lleva texto blanco encima.
+     Son demasiado claros para pasar contraste con blanco — todos usan
+     una variante oscura del mismo tono para texto/ícono. */
+
+  /* Primario — botón de acción principal (ej. "Generar PDF") */
+  --color-primary: #8FBCE6;        /* Azul Cielo */
+  --color-primary-hover: #7BAEDC;
+  --color-primary-text: #23405C;   /* texto/ícono sobre --color-primary */
+
+  /* Secundario — acciones secundarias, estado "slot lleno" */
+  --color-secondary: #B6DDA0;      /* Verde Menta */
+  --color-secondary-hover: #A3D189;
+  --color-secondary-text: #2E4A22; /* texto/ícono sobre --color-secondary */
+
+  /* Acento — usar en áreas pequeñas: selección, badges, resaltados.
+     No usar como relleno grande, es el más luminoso de los tres. */
+  --color-accent: #FFE9A8;         /* Amarillo Suave */
+  --color-accent-text: #5C4A12;    /* texto/ícono sobre --color-accent */
+
+  /* ---- Advertencia (foto de baja resolución) ----
+     Familia dorado/mostaza, deliberadamente distinta en luminosidad y
+     saturación del amarillo de acento para que no se confundan a simple
+     vista. Nunca rojo — el SPEC pide "avisa, no bloquea". */
+  --color-warning: #D8B979;        /* borde / ícono de advertencia */
+  --color-warning-bg: #FBF2DC;     /* fondo de chip/badge de advertencia */
+  --color-warning-text: #8A6522;   /* texto sobre --color-warning-bg */
+
+  /* Anillo de doblez (zona entre borde seguro y corte, durante edición).
+     A propósito fuera de la paleta pastel — debe leerse como "esto se
+     pierde", no como un color amigable más. */
+  --color-fold-overlay: rgba(30, 30, 35, 0.45);
+
+  /* ---- Tipografía ---- */
+  --font-family: 'Nunito', 'Quicksand', system-ui, sans-serif;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 28px;
+  --font-size-xxl: 40px;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ---- Espaciado (múltiplos de 8px) ---- */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 48px;
+
+  /* ---- Radios ---- */
+  --radius-card: 16px;
+  --radius-pill: 999px;
+
+  /* ---- Objetivo táctil mínimo (botón principal) ---- */
+  --touch-target-min: 56px;
+}

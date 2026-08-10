@@ -159,7 +159,7 @@ Prepara el despliegue en Cloudflare Pages:
 - Configura el archivo de build si hace falta
 - Escribe en README.md: cómo correr local, cómo desplegar, y la estructura
   del proyecto
-- Prepara .gitignore
+
 - Dame los comandos de git para el primer commit y push
 ```
 

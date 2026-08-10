@@ -1,0 +1,217 @@
+.slot-grid {
+  display: grid;
+  gap: var(--space-3);
+  justify-content: start;
+}
+
+.slot {
+  position: relative;
+  border-radius: 50%;
+  touch-action: none; /* el navegador no debe hacer scroll/zoom de página al arrastrar o pellizcar un slot */
+}
+
+.slot-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.slot.is-adjusting .slot-canvas {
+  cursor: grabbing;
+}
+
+.slot-canvas:focus-visible {
+  outline: 3px solid var(--color-primary-text);
+  outline-offset: 3px;
+}
+
+.slot.has-warning .slot-canvas {
+  box-shadow: 0 0 0 3px var(--color-warning), 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.slot-warning-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 24px;
+  height: 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border: 1.5px solid var(--color-warning);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  pointer-events: none;
+}
+
+/* Anillo de doblez: capa CSS separada, nunca se dibuja dentro del canvas.
+   Así es estructuralmente imposible que termine horneada en el PNG/PDF
+   exportado — el canvas de exportación no sabe que esta capa existe. */
+.fold-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--color-fold-overlay);
+  -webkit-mask-image: radial-gradient(circle, transparent 0 var(--safe-zone-pct, 60%), black var(--safe-zone-pct, 60%) 100%);
+  mask-image: radial-gradient(circle, transparent 0 var(--safe-zone-pct, 60%), black var(--safe-zone-pct, 60%) 100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease;
+}
+
+.slot.is-adjusting .fold-overlay {
+  opacity: 1;
+}
+
+.slot-empty-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xl);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.slot-panel {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: var(--space-2);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  cursor: default;
+}
+
+.slot-panel:focus-visible {
+  outline: none;
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.panel-row input[type='text'] {
+  flex: 1;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--space-1);
+  padding: var(--space-1);
+}
+
+.panel-row input[type='file'] {
+  flex: 1;
+  font-size: var(--font-size-sm);
+}
+
+.emoji-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.emoji-btn {
+  width: 44px;
+  height: 44px;
+  font-size: var(--font-size-lg);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.emoji-btn:hover {
+  background: var(--color-bg);
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.color-row input[type='color'] {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.panel-error {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-warning-text);
+}
+
+.panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.btn-primary,
+.btn-outline {
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-2);
+  min-height: 44px;
+  cursor: pointer;
+  border: none;
+}
+
+.emoji-btn:focus-visible,
+.swatch:focus-visible,
+.btn-primary:focus-visible,
+.btn-outline:focus-visible {
+  outline: 3px solid var(--color-primary-text);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}

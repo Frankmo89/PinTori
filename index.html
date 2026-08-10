@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PinTori</title>
+  <link rel="stylesheet" href="styles/tokens.css" />
+  <link rel="stylesheet" href="styles/base.css" />
+  <link rel="stylesheet" href="styles/editor.css" />
+  <link rel="stylesheet" href="styles/modal.css" />
+</head>
+<body>
+  <main>
+    <div class="page-header">
+      <h1>PinTori</h1>
+      <button type="button" id="lang-toggle-btn" class="btn-link" data-i18n="langToggle" aria-label="Switch language / Cambiar idioma">English</button>
+    </div>
+    <p class="subtitle" data-i18n="subtitle">Toca un círculo para agregar foto, texto, emoji o color.</p>
+    <div id="slot-grid" class="slot-grid"></div>
+
+    <div class="export-actions">
+      <button type="button" id="export-pdf-btn" class="btn-generate" data-i18n="generatePdf">Generar PDF</button>
+      <button type="button" id="export-png-btn" class="btn-link" data-i18n="downloadPng">Descargar PNG</button>
+    </div>
+  </main>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
