@@ -10,6 +10,7 @@ import {
   setSlot,
   setActiveIndex,
   fillAllFrom,
+  repeatFromInto,
   getState,
   getDefaultSlotType,
   getSlotType,
@@ -32,12 +33,96 @@ export function buildSlotGrid(container) {
   const defaultType = getDefaultSlotType();
   const slotCount = computeDefaultSlotCount({ slotType: defaultType, sheetId });
 
+  // Un rebuild de la cuadrícula (p. ej. cambiar el tipo default) recrea
+  // todo el DOM de los slots — cualquier modo de "Repetir en..." activo
+  // quedaría con índices/elementos colgando, así que se cierra primero.
+  exitRepeatMode(container);
+
   container.innerHTML = '';
   container.className = 'slot-grid';
 
   for (let index = 0; index < slotCount; index++) {
     buildSlotElement(container, index, slotCount);
   }
+}
+
+// --- "Repetir en...": repetir un diseño en varios slots elegidos a mano,
+// sin llegar a "Llenar todos" (Prompt 16). Estado a nivel de módulo
+// porque solo existe una cuadrícula/un modo activo a la vez — pasarlo
+// como parámetro por cada slot solo agregaría ruido sin necesidad.
+let repeatSourceIndex = null;
+const repeatTargetIndexes = new Set();
+let repeatBarEl = null;
+let repeatEscapeHandler = null;
+
+function isRepeatModeActive() {
+  return repeatSourceIndex !== null;
+}
+
+function toggleRepeatTarget(index, slotEl) {
+  if (index === repeatSourceIndex) return;
+  if (repeatTargetIndexes.has(index)) {
+    repeatTargetIndexes.delete(index);
+    slotEl.classList.remove('is-repeat-target');
+  } else {
+    repeatTargetIndexes.add(index);
+    slotEl.classList.add('is-repeat-target');
+  }
+}
+
+function startRepeatMode(container, sourceIndex, slotCount) {
+  repeatSourceIndex = sourceIndex;
+  repeatTargetIndexes.clear();
+  container.classList.add('is-repeat-mode');
+  container.querySelector(`.slot[data-index="${sourceIndex}"]`)?.classList.add('is-repeat-source');
+
+  const bar = document.createElement('div');
+  bar.className = 'repeat-mode-bar';
+
+  const hint = document.createElement('span');
+  hint.className = 'repeat-mode-hint';
+  hint.textContent = t('repeatModeHint');
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'btn-outline';
+  cancelBtn.textContent = t('cancel');
+  cancelBtn.addEventListener('click', () => exitRepeatMode(container));
+
+  const doneBtn = document.createElement('button');
+  doneBtn.type = 'button';
+  doneBtn.className = 'btn-primary';
+  doneBtn.textContent = t('repeatDone');
+  doneBtn.addEventListener('click', () => {
+    repeatFromInto(sourceIndex, [...repeatTargetIndexes]);
+    exitRepeatMode(container);
+    renderAllSlots(container);
+  });
+
+  bar.append(hint, cancelBtn, doneBtn);
+  document.body.appendChild(bar);
+  repeatBarEl = bar;
+
+  repeatEscapeHandler = (e) => {
+    if (e.key === 'Escape') exitRepeatMode(container);
+  };
+  document.addEventListener('keydown', repeatEscapeHandler);
+}
+
+function exitRepeatMode(container) {
+  if (!isRepeatModeActive()) return;
+  container.classList.remove('is-repeat-mode');
+  container.querySelectorAll('.slot').forEach((slotEl) => {
+    slotEl.classList.remove('is-repeat-target', 'is-repeat-source');
+  });
+  repeatBarEl?.remove();
+  repeatBarEl = null;
+  if (repeatEscapeHandler) {
+    document.removeEventListener('keydown', repeatEscapeHandler);
+    repeatEscapeHandler = null;
+  }
+  repeatSourceIndex = null;
+  repeatTargetIndexes.clear();
 }
 
 function buildSlotElement(container, index, slotCount) {
@@ -112,6 +197,7 @@ function buildSlotElement(container, index, slotCount) {
         fillAllFrom(index, slotCount);
         renderAllSlots(container);
       },
+      onRepeatIn: () => startRepeatMode(container, index, slotCount),
     });
   }
 
@@ -120,14 +206,26 @@ function buildSlotElement(container, index, slotCount) {
   // slotEl. Si el listener estuviera ahí, cada clic dentro del panel
   // (por ejemplo el input de texto) volvería a llamar a openSlotPanel,
   // destruyendo y recreando el panel — y con él, el foco del input.
+  //
+  // Con el modo "Repetir en..." activo, el mismo tap elige/quita este
+  // slot como destino en vez de abrir su panel — un solo listener con
+  // una rama es más simple que dos listeners que se pisan.
   canvas.addEventListener('click', () => {
     if (slotEl.classList.contains('is-adjusting')) return;
+    if (isRepeatModeActive()) {
+      toggleRepeatTarget(index, slotEl);
+      return;
+    }
     openPanelForSlot();
   });
 
   canvas.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
       e.preventDefault();
+      if (isRepeatModeActive()) {
+        toggleRepeatTarget(index, slotEl);
+        return;
+      }
       openPanelForSlot();
     }
   });

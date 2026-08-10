@@ -33,7 +33,13 @@ function loadJsPdf() {
   return loadPromise;
 }
 
-export async function exportPdf() {
+// Arma el documento jsPDF sin decidir qué hacer con él — exportPdf() lo
+// guarda directo (descarga de siempre); share.js (Prompt 17) lo
+// comparte como adjunto por Web Share API y solo cae a doc.save() si el
+// navegador no puede compartir archivos. Mismo canvas/JPEG en los dos
+// casos, para que compartir nunca produzca un PDF distinto al que se
+// descarga.
+export async function buildPdf() {
   const jsPDF = await loadJsPdf();
   const { canvas, grid } = renderSheetCanvas();
 
@@ -54,5 +60,11 @@ export async function exportPdf() {
   // contenido de líneas/texto sobre fondo plano.
   const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.95);
   doc.addImage(jpegDataUrl, 'JPEG', 0, 0, grid.sheet.widthMm, grid.sheet.heightMm);
-  doc.save(buildFilename(resolveSlotSpec(getDefaultSlotType()), 'pdf'));
+  const filename = buildFilename(resolveSlotSpec(getDefaultSlotType()), 'pdf');
+  return { doc, filename };
+}
+
+export async function exportPdf() {
+  const { doc, filename } = await buildPdf();
+  doc.save(filename);
 }

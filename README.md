@@ -10,34 +10,51 @@ para el sistema de diseño.
 
 ---
 
-## Detección de rostro (la pieza de AI/ML)
+## Encuadre automático (la pieza de AI/ML)
 
-Cuando se agrega una foto a un slot, PinTori intenta detectar caras y usa
-esa información para elegir dónde centrar el recorte inicial — en vez de
-centrar siempre en el punto medio geométrico de la imagen, que casi nunca
-es donde está la cara si la foto viene de un teléfono sin editar.
+Cuando se agrega una foto a un slot, PinTori intenta encontrar el sujeto de
+la imagen y usa esa información para elegir dónde centrar el recorte
+inicial — en vez de centrar siempre en el punto medio geométrico, que casi
+nunca es donde está lo importante si la foto viene de un teléfono sin
+editar. Es una cadena de tres pasadas, cada una un respaldo silencioso de
+la anterior:
+
+1. **Rostro humano** — face-api.js (TinyFaceDetector). La más precisa,
+   cuando aplica.
+2. **Sujeto genérico** — smartcrop.js, solo si la pasada 1 no encontró
+   ningún rostro (dibujos, anime, mascotas, objetos, paisajes).
+3. **Centro geométrico** — si ninguna de las dos anteriores encontró nada,
+   o algo falló cargando cualquiera de las dos. Es el mismo comportamiento
+   que tenía la app antes de que existiera esta pieza — nunca es peor que
+   eso, en el peor caso.
 
 ### Qué hace, en la práctica
 
 1. Se agrega una foto (input `<input type="file">`, sin cámara ni upload).
 2. Antes de mostrarla en el slot, la imagen se reduce a un canvas auxiliar
-   pequeño (máx. 320px de lado) y se corre detección de rostro sobre esa
-   copia — no sobre el archivo original, que puede pesar varios MB.
-3. Si se detecta uno o más rostros, se calcula el rectángulo que los
-   envuelve a todos y se usa su punto medio.
-4. Ese punto se traduce a un desplazamiento (`offsetXFrac`/`offsetYFrac`)
-   que dejaría exactamente ese punto en el centro del círculo — que es
-   donde siempre cae la zona segura, sin importar el tamaño de pin
-   elegido. No hace falta zoom adicional: centrar ya garantiza que el
-   punto quede dentro de la zona segura.
-5. Si no se detecta ningún rostro, o el modelo no llegó a cargar, no pasa
-   nada especial: el offset se queda en `0,0` (centro geométrico), que es
-   el mismo comportamiento que tenía la app antes de esta pieza.
-6. El usuario puede arrastrar y hacer zoom manualmente después, en
+   pequeño (320px para face-api.js, 256px para smartcrop.js) y la
+   detección corre sobre esa copia — no sobre el archivo original, que
+   puede pesar varios MB.
+3. Se intenta primero encontrar rostros. Si se detecta uno o más, se
+   calcula el rectángulo que los envuelve a todos y se usa su punto medio.
+4. Si no se detectó ningún rostro, se le pasa la misma imagen reducida a
+   smartcrop.js, que busca el recorte cuadrado con más bordes/contraste/
+   saturación (su forma de estimar "lo interesante" de la imagen sin un
+   modelo entrenado) y se usa el centro de ese recorte.
+5. El punto que haya ganado (de cualquiera de las dos pasadas) se traduce
+   a un desplazamiento (`offsetXFrac`/`offsetYFrac`) que lo deja
+   exactamente en el centro del círculo — que es donde siempre cae la zona
+   segura, sin importar el tamaño de pin elegido. No hace falta zoom
+   adicional: centrar ya garantiza que el punto quede dentro de la zona
+   segura.
+6. Si ninguna de las dos pasadas encuentra nada, o cualquiera de los dos
+   modelos no llegó a cargar, no pasa nada especial: el offset se queda en
+   `0,0` (centro geométrico).
+7. El usuario puede arrastrar y hacer zoom manualmente después, en
    cualquier caso — la detección solo pone el punto de partida, nunca
    bloquea el ajuste a mano.
 
-No hay botón para activarla, no hay insignia "✨ AI" en la interfaz, y no
+No hay botón para activar nada, no hay insignia "✨ AI" en la interfaz, y no
 se le explica nada al usuario. Si funciona, la foto simplemente aparece
 bien encuadrada. Si no detecta nada, aparece centrada como siempre. En
 ningún caso se interrumpe el flujo ni se le pide al usuario que espere.
@@ -61,35 +78,72 @@ todo en el teléfono de quien va a usar esto realmente. La detección
 corre con **TinyFaceDetector**, el modelo más liviano que ofrece
 face-api.js (una CNN compacta, ~190KB de pesos cuantizados a 8 bits).
 
+### Respaldo: smartcrop.js, no un segundo modelo entrenado
+
+Cuando face-api.js no encuentra ningún rostro (dibujos, anime, mascotas,
+objetos, paisajes), en vez de rendirse directo al centro geométrico hay una
+segunda pasada con **smartcrop.js** — pero es visión clásica (bordes +
+tono de piel + saturación), no una red entrenada. Se comparó contra dos
+opciones de deep learning antes de elegir, mismo criterio de "medir, no
+asumir" que la comparación de arriba:
+
+| | smartcrop.js | coco-ssd (TFJS) | U2Netp + onnxruntime-web |
+|---|---|---|---|
+| Qué es | Heurística clásica, sin red neuronal | Detección de objetos, 80 clases COCO | Red entrenada para saliency detection genérico |
+| Modelo | Ninguno — es solo código | `lite_mobilenet_v2`: <1MB | ~4.7MB |
+| Runtime | Ninguno, JS puro | `@tensorflow/tfjs` — un **segundo** motor TensorFlow.js, no comparte el que face-api.js ya trae embebido | onnxruntime-web WASM: ~3–8MB incluso en su build "mínimo" |
+| **Total diferido** | **~17 KB** | **~1.5–2.3 MB** (estimado) | **~8–13 MB** |
+| Cubre dibujos/anime | Sí, en general | No — solo sus 80 clases entrenadas | Sí, genérico |
+
+U2Netp+onnxruntime cae en el mismo orden de magnitud que MediaPipe (~11.4MB),
+ya descartado arriba por la misma razón. coco-ssd queda fuera de plano para
+el caso que motiva esto — un dibujo o un personaje de anime no es ninguna
+de sus 80 clases entrenadas. smartcrop.js es ~50x más liviano que el
+propio face-api.js y no agrega ningún runtime nuevo.
+
+La salvedad honesta: smartcrop.js no es tan preciso como un modelo de
+saliencia entrenado — puede fallar con fondos de alto contraste que no son
+el sujeto. Pero la comparación real no es contra face-api.js, es contra el
+centro geométrico puro (lo único que había antes de esto), y contra eso
+mejora en la mayoría de los casos con un costo casi nulo — y nunca puede
+dejar un resultado peor que ese, porque si falla, cae ahí igual.
+
 ### Todo local, nada de red
 
-- `vendor/face-api/face-api.min.js` y `vendor/face-api/models/` están
-  vendorizados dentro del repo — no se cargan desde un CDN en producción.
-  Cero llamadas a ningún API, cero dependencia de que un tercero siga
-  sirviendo el archivo el día de mañana.
-- El modelo nunca ve la foto original a resolución completa: solo la
-  copia reducida a 320px que se genera localmente para la detección. La
-  imagen jamás sale del dispositivo del usuario, en ningún paso.
+- `vendor/face-api/face-api.min.js`, `vendor/face-api/models/` y
+  `vendor/smartcrop/smartcrop.js` están vendorizados dentro del repo — no
+  se cargan desde un CDN en producción. Cero llamadas a ningún API, cero
+  dependencia de que un tercero siga sirviendo el archivo el día de mañana.
+- Ningún modelo ve la foto original a resolución completa: solo la copia
+  reducida (320px para face-api.js, 256px para smartcrop.js) que se genera
+  localmente para cada detección. La imagen jamás sale del dispositivo del
+  usuario, en ningún paso.
 
 ### Carga diferida
 
-El script y el modelo no se tocan hasta después de que la página ya
-pintó su primer frame — `js/main.js` dispara el precalentamiento con
-`requestIdleCallback` (con respaldo `setTimeout` para Safari, que no
-implementa esa API). Así el peso del modelo nunca compite con la
-apertura inicial de la app. Si el usuario agrega una foto antes de que
-el precalentamiento termine, la detección simplemente espera a que
-termine de cargar — no hay una segunda ruta de código para ese caso.
+El script y el modelo de cada pasada no se tocan hasta después de que la
+página ya pintó su primer frame — `js/main.js` dispara el precalentamiento
+de las dos (face-api.js y smartcrop.js) con `requestIdleCallback` (con
+respaldo `setTimeout` para Safari, que no implementa esa API). Así el peso
+de ninguna de las dos compite con la apertura inicial de la app. Si el
+usuario agrega una foto antes de que el precalentamiento termine, la
+detección simplemente espera a que termine de cargar — no hay una segunda
+ruta de código para ese caso.
 
 ### Dónde está el código
 
-- `js/face/faceDetect.js` — carga diferida del script + modelo,
-  reducción de la imagen, detección, y el punto medio de los rostros
-  encontrados (o `null` si no hay ninguno o algo falló).
-- `js/render.js` (`computeFaceCenteredOffset`) — traduce ese punto medio
-  a un offset de recorte, reutilizando la misma matemática de
-  posicionamiento de foto que usa el editor y (más adelante) la
-  exportación de la hoja — para que este cálculo nunca pueda
+- `js/face/faceDetect.js` — carga diferida del script + modelo de
+  face-api.js, reducción de la imagen, detección, y el punto medio de los
+  rostros encontrados (o `null` si no hay ninguno o algo falló). También
+  exporta `downscaleForDetection`, que reutiliza `saliencyDetect.js`.
+- `js/face/saliencyDetect.js` — el respaldo de smartcrop.js: carga
+  diferida, y el centro del recorte "más interesante" (o `null` si algo
+  falló). Mismo contrato de retorno que `faceDetect.js`, para que
+  `slotPanel.js` no necesite tratarlas distinto.
+- `js/render.js` (`computeFaceCenteredOffset`) — traduce el punto medio
+  ganador (de cualquiera de las dos pasadas) a un offset de recorte,
+  reutilizando la misma matemática de posicionamiento de foto que usa el
+  editor y la exportación de la hoja — para que este cálculo nunca pueda
   desincronizarse del resto del sistema de recorte.
 
 ---
@@ -117,12 +171,13 @@ js/
   downloadScreen.js   modal con instrucciones de impresión tras exportar
   selftest.js         pruebas rápidas de geometry.js en consola, en cada carga
   main.js             arranca todo: carga estado guardado, construye el grid,
-                       conecta botones, precalienta el modelo de rostro
+                       conecta botones, precalienta las dos pasadas de encuadre
   editor/             grid de slots, panel por slot, drag/zoom de foto
-  face/               detección de rostro (ver arriba)
-  export/              composición de la hoja a 300 DPI + export a PDF/PNG
+  face/               encuadre automático: rostro + respaldo de sujeto genérico (ver arriba)
+  export/              composición de la hoja a 300 DPI + export a PDF/PNG/compartir
 vendor/
   face-api/           face-api.js + modelo TinyFaceDetector, vendorizados
+  smartcrop/          smartcrop.js (respaldo de encuadre sin rostro), vendorizado
   jspdf/               jsPDF (build UMD), vendorizado
 ```
 

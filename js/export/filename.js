@@ -1,8 +1,8 @@
 // Nombre de archivo compartido por PDF y PNG: pintori-{tamaño}-{fecha}.ext
 // Usa el diámetro TERMINADO del pin (no el de corte) cuando el default
 // de la hoja es un Pin — es lo que el SPEC ejemplifica:
-// pintori-70mm-2026-08-09.pdf para Frank's machine (70mm terminado,
-// 85mm de corte). Para Sticker/Etiqueta, o una hoja mixta, no hay un
+// pintori-85mm-2026-08-09.pdf para el tamaño default (85mm terminado,
+// 105mm de corte). Para Sticker/Etiqueta, o una hoja mixta, no hay un
 // solo "tamaño terminado" que describa todo, así que se usa el tamaño
 // de corte del default de la hoja.
 

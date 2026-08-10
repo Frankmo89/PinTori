@@ -63,19 +63,27 @@ export function setActiveIndex(index) {
   state.activeIndex = index;
 }
 
-// "Llenar todos con este diseño": copia el contenido del slot `index` a
-// todos los demás. El tipo (forma/tamaño) de cada slot NO se toca —
-// llenar con una foto no debe convertir un sticker en un pin.
-export function fillAllFrom(index, totalCount) {
+// Copia el contenido del slot `index` a cada índice de `targetIndexes`.
+// El tipo (forma/tamaño) de cada slot destino NO se toca — repetir una
+// foto no debe convertir un sticker en un pin. Base común de "Llenar
+// todos" (Prompt 6) y "Repetir en..." (Prompt 16) — mismo copiado,
+// distinta lista de destinos.
+export function repeatFromInto(index, targetIndexes) {
   const source = getSlot(index);
   if (source.type === 'empty' && !source.text?.value) return;
   const { slotTypeOverride, ...content } = source;
-  for (let i = 0; i < totalCount; i++) {
+  for (const i of targetIndexes) {
     if (i === index) continue;
     const existing = getSlot(i);
     state.slots[i] = { ...content, slotTypeOverride: existing.slotTypeOverride };
   }
   notify();
+}
+
+// "Llenar todos con este diseño": repetir el slot `index` en todos los
+// demás slots de la hoja.
+export function fillAllFrom(index, totalCount) {
+  repeatFromInto(index, Array.from({ length: totalCount }, (_, i) => i));
 }
 
 export function getDefaultSlotType() {

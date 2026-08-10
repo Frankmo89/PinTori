@@ -46,7 +46,10 @@ export function warmUpFaceDetection() {
   getDetector().catch(() => {});
 }
 
-function downscaleForDetection(image, maxSize) {
+// Exportada porque saliencyDetect.js (Prompt 18) la reutiliza tal cual
+// — "achicar antes de analizar" es el mismo paso para las dos pasadas
+// de detección, sin nada específico de rostros en la función.
+export function downscaleForDetection(image, maxSize) {
   const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
   const w = Math.max(1, Math.round(image.width * scale));
   const h = Math.max(1, Math.round(image.height * scale));

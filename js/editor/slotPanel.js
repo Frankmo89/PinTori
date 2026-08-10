@@ -6,6 +6,7 @@
 import { getSlot, setSlot, clearSlot, getDefaultSlotType, setSlotTypeOverride } from '../state.js';
 import { computeFaceCenteredOffset, clampPhotoOffset } from '../render.js';
 import { detectFaceCenterFrac } from '../face/faceDetect.js';
+import { detectSaliencyCenterFrac } from '../face/saliencyDetect.js';
 import { isPhotoLowRes } from '../resolutionCheck.js';
 import { buildTypeSelector } from './typeSelector.js';
 import { t } from '../i18n.js';
@@ -41,6 +42,56 @@ let openPanelEl = null;
 let outsideClickHandler = null;
 let escapeHandler = null;
 let returnFocusTarget = null;
+let resizeHandler = null;
+let backdropEl = null;
+
+// Debe calzar con el media query de editor.css (>=600px popover /
+// <600px bottom-sheet) — mismo corte, justificado ahí: es donde el
+// grid deja de tener 2 columnas cómodas para el pin default.
+const NARROW_BREAKPOINT_PX = 600;
+// Debe calzar con el width:300px fijo del popover en editor.css.
+const PANEL_WIDTH_PX = 300;
+const PANEL_EDGE_MARGIN_PX = 8;
+
+function isNarrowViewport() {
+  return window.innerWidth < NARROW_BREAKPOINT_PX;
+}
+
+function ensureBackdrop() {
+  if (backdropEl) return;
+  backdropEl = document.createElement('div');
+  backdropEl.className = 'slot-panel-backdrop';
+  document.body.appendChild(backdropEl);
+}
+
+function removeBackdrop() {
+  if (backdropEl) {
+    backdropEl.remove();
+    backdropEl = null;
+  }
+}
+
+// Bottom-sheet (<600px): posición y ancho los da el CSS fijo (position:
+// fixed, width:100%) — no hay nada que clampear porque no hay 'left'
+// que fijar. Popover (>=600px): 'left' se calcula en coordenadas
+// LOCALES a slotEl (position:absolute la sigue tomando de ahí), pero el
+// clamp se decide en coordenadas de PÁGINA contra window.innerWidth —
+// es la única forma de saber si el popover centrado en el slot se sale
+// del viewport real, sin importar dónde esté el slot en la hoja.
+function positionPanel(panel, slotEl) {
+  if (isNarrowViewport()) {
+    panel.style.left = '';
+    ensureBackdrop();
+    return;
+  }
+  removeBackdrop();
+  const slotRect = slotEl.getBoundingClientRect();
+  const centeredLeftLocal = slotRect.width / 2 - PANEL_WIDTH_PX / 2;
+  const desiredPageLeft = slotRect.left + centeredLeftLocal;
+  const maxPageLeft = window.innerWidth - PANEL_WIDTH_PX - PANEL_EDGE_MARGIN_PX;
+  const clampedPageLeft = Math.min(Math.max(desiredPageLeft, PANEL_EDGE_MARGIN_PX), Math.max(maxPageLeft, PANEL_EDGE_MARGIN_PX));
+  panel.style.left = `${clampedPageLeft - slotRect.left}px`;
+}
 
 export function closeSlotPanel() {
   if (openPanelEl) {
@@ -55,6 +106,11 @@ export function closeSlotPanel() {
     document.removeEventListener('keydown', escapeHandler);
     escapeHandler = null;
   }
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler);
+    resizeHandler = null;
+  }
+  removeBackdrop();
   if (returnFocusTarget) {
     returnFocusTarget.focus();
     returnFocusTarget = null;
@@ -76,12 +132,15 @@ async function loadImageFromFile(file, box) {
       scale: DEFAULT_PHOTO_SCALE,
     };
 
-    // Silencioso: si no se detecta rostro (o el modelo no cargó), el
-    // encuadre se queda en el centro geométrico, sin avisar nada — es el
-    // mismo resultado que un slot que nunca intentó detectar nada.
-    const faceCenter = await detectFaceCenterFrac(bitmap);
-    if (faceCenter) {
-      const offset = computeFaceCenteredOffset(bitmap.width, bitmap.height, faceCenter);
+    // Cadena de encuadre (Prompt 18): rostro humano primero (más
+    // preciso, cuando aplica) -> sujeto genérico como respaldo (dibujos,
+    // anime, mascotas, objetos, paisajes) -> centro geométrico si
+    // ninguna de las dos encuentra nada o algo falló cargando. Silencioso
+    // en los tres casos, sin avisar nada — un slot sin subject center es
+    // el mismo resultado que un slot que nunca intentó detectar nada.
+    const subjectCenter = (await detectFaceCenterFrac(bitmap)) || (await detectSaliencyCenterFrac(bitmap));
+    if (subjectCenter) {
+      const offset = computeFaceCenteredOffset(bitmap.width, bitmap.height, subjectCenter);
       const clamped = clampPhotoOffset({ ...photo, ...offset }, box);
       photo.offsetXFrac = clamped.offsetXFrac;
       photo.offsetYFrac = clamped.offsetYFrac;
@@ -107,7 +166,7 @@ function defaultTabFor(slot) {
 export function openSlotPanel(
   index,
   slotEl,
-  { onSlotChange, onFillAll, onTypeChange, returnFocusTo, cutWidthPx, cutHeightPx }
+  { onSlotChange, onFillAll, onRepeatIn, onTypeChange, returnFocusTo, cutWidthPx, cutHeightPx }
 ) {
   closeSlotPanel();
 
@@ -376,6 +435,19 @@ export function openSlotPanel(
     onSlotChange();
   });
 
+  const repeatBtn = document.createElement('button');
+  repeatBtn.type = 'button';
+  repeatBtn.className = 'btn-outline';
+  repeatBtn.textContent = t('repeatIn');
+  repeatBtn.addEventListener('click', () => {
+    // Cierra el panel antes de entrar al modo de selección — el modo
+    // necesita que el tap en un slot elija destino en vez de abrir su
+    // panel, y closeSlotPanel() ya sabe deshacer todo lo que este panel
+    // dejó registrado (listeners, foco, resize).
+    closeSlotPanel();
+    onRepeatIn();
+  });
+
   const fillAllBtn = document.createElement('button');
   fillAllBtn.type = 'button';
   fillAllBtn.className = 'btn-primary';
@@ -384,7 +456,7 @@ export function openSlotPanel(
     onFillAll();
   });
 
-  actions.append(clearBtn, fillAllBtn);
+  actions.append(clearBtn, repeatBtn, fillAllBtn);
 
   panel.append(tabBar, photoPanelEl, textPanelEl, emojiPanelEl, backgroundPanelEl, typePanelEl, warningEl, actions);
   selectTab(activeTab);
@@ -392,6 +464,13 @@ export function openSlotPanel(
   slotEl.appendChild(panel);
   openPanelEl = panel;
   returnFocusTarget = returnFocusTo || null;
+
+  positionPanel(panel, slotEl);
+  // Reposiciona en vivo si la ventana cambia de tamaño (o rota) con el
+  // panel abierto — incluyendo el caso de cruzar el corte de 600px, que
+  // cambia el modo entero (popover clampeado <-> bottom-sheet).
+  resizeHandler = () => positionPanel(panel, slotEl);
+  window.addEventListener('resize', resizeHandler);
 
   // Foco al abrir: un usuario de teclado que activó el slot con
   // Enter/Espacio queda parado justo dentro del panel recién creado, no

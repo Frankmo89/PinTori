@@ -103,16 +103,69 @@
   pointer-events: none;
 }
 
-.slot-panel {
-  position: absolute;
-  top: calc(100% + var(--space-1));
+/* Prompt 16: "Repetir en..." — modo de selección de slots destino,
+   entrado desde el panel de un slot. Mientras está activo, cada tap en
+   un slot (menos el de origen) lo suma/quita de la selección en vez de
+   abrir su panel — ver el branch de isRepeatModeActive() en
+   slotGrid.js. */
+.slot-grid.is-repeat-mode .slot-canvas {
+  cursor: pointer;
+}
+
+.slot.is-repeat-source .slot-canvas {
+  cursor: default;
+  opacity: 0.55;
+  box-shadow: 0 0 0 3px var(--color-secondary), 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.slot.is-repeat-target .slot-canvas {
+  box-shadow: 0 0 0 3px var(--color-primary), 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Misma idea de barra flotante fija que .slot-panel-backdrop resuelve
+   para el panel: centrada en el VIEWPORT (no en un slot), así que
+   left:50%/translateX(-50%) aquí sí es seguro — pero max-width +
+   flex-wrap igual por si el hint no cabe en una sola línea en 375px. */
+.repeat-mode-bar {
+  position: fixed;
   left: 50%;
+  bottom: var(--space-3);
   transform: translateX(-50%);
-  width: 300px;
+  max-width: calc(100% - var(--space-3) * 2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: var(--space-2);
+  z-index: 20;
+}
+
+.repeat-mode-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* 2026-08-10: este panel solía ser SIEMPRE un popover de 300px
+   centrado en el slot (left:50%; transform:translateX(-50%)), sin
+   clampear contra el viewport. Con un slot cerca de un borde angosto
+   (cualquier slot en celular, el primero de cada fila en tablet chico)
+   el panel se salía de pantalla y parte de sus botones quedaba
+   inalcanzable — no había ni scroll para llegar, porque el offset
+   negativo no cuenta como contenido "scrolleable" (ver PROMPTS_V3.md,
+   Prompt 13). Dos modos ahora, por media query:
+   - >=600px: sigue siendo popover flotante, pero left lo fija
+     positionPanel() en slotPanel.js (clamp real contra el viewport,
+     nunca solo centrado en el slot).
+   - <600px: bottom-sheet fijo, ancho completo, separado del slot en vez
+     de flotar sobre/cerca de él — ver razón del corte de 600px abajo. */
+.slot-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
   padding: var(--space-2);
   z-index: 10;
   display: flex;
@@ -123,6 +176,49 @@
 
 .slot-panel:focus-visible {
   outline: none;
+}
+
+/* Ancho fijo (300px) debe calzar con PANEL_WIDTH_PX en slotPanel.js —
+   ese valor es el que se clampea contra el viewport en JS. */
+@media (min-width: 600px) {
+  .slot-panel {
+    position: absolute;
+    top: calc(100% + var(--space-1));
+    left: 0; /* fallback antes de que positionPanel() fije el valor real */
+    width: 300px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* 600px: donde el grid deja de tener 2 columnas cómodas para el pin
+   default (210px de slot + 24px de gap ya no caben dos veces en el
+   ancho disponible bajo esto) — el mismo punto, en la práctica, donde
+   un popover de 300px centrado en un slot deja de tener espacio a los
+   dos lados sin importar cuánto se clampee: clampearlo contra el borde
+   en vez de taparlo, en un slot angosto, termina tapando el propio slot
+   que se está editando. Bottom-sheet real evita competir por ese mismo
+   espacio angosto. */
+@media (max-width: 599.98px) {
+  .slot-panel {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Mismo tono/opacidad que .modal-backdrop (modal.css) por consistencia
+   visual; z-index por debajo del modal de descarga (100) — nunca
+   compiten porque el panel de slot se cierra antes de exportar, pero
+   si algún día coincidieran, el modal debe ganar. */
+.slot-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 25, 0.45);
+  z-index: 9;
 }
 
 .panel-row {

@@ -168,8 +168,10 @@ export function resolveSlotSpec(slotType) {
 //
 // Para el caso uniforme (todas las piezas iguales) esto da EXACTAMENTE
 // las mismas posiciones que computeGrid(): mismo llenado por fila, mismo
-// centrado del sobrante como margen. Verificado a mano contra el caso
-// Frank's machine + Carta (6.2mm de margen, 2 columnas).
+// centrado del sobrante como margen. Verificado a mano en su momento;
+// desde entonces lo cubre la aserción automática de selftest.js
+// (samePositions), así que no depende de que este comentario quede al día
+// con qué tamaño/hoja se usó para verificarlo.
 export function packSlots({ specs, sheetId, marginMm = GRID_MIN_MARGIN_MM, gapMm = GRID_MIN_GAP_MM, dpi = DPI }) {
   const sheet = getSheetSize(sheetId);
   const usableWidthMm = sheet.widthMm - 2 * marginMm;

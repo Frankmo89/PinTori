@@ -85,16 +85,19 @@ export function computePhotoDrawRect(photo, box) {
   };
 }
 
-// A partir del centro de un rostro detectado (fracción 0..1 del tamaño
-// de la imagen original), calcula el offset que deja ese punto exacto
-// en el centro de la caja. Como offsetXFrac/offsetYFrac son fracción de
-// la imagen dibujada (no de la caja), este cálculo no depende de la
-// forma ni el tamaño del slot destino — es el mismo para un pin, un
-// sticker cuadrado o una etiqueta rectangular.
-export function computeFaceCenteredOffset(naturalW, naturalH, faceCenterFrac) {
+// A partir del centro de un sujeto detectado (fracción 0..1 del tamaño
+// de la imagen original) — rostro humano vía face-api.js o, si no hay
+// ninguno, sujeto genérico vía smartcrop.js (ver saliencyDetect.js) —
+// calcula el offset que deja ese punto exacto en el centro de la caja.
+// A esta función le da igual de cuál de las dos vino el punto. Como
+// offsetXFrac/offsetYFrac son fracción de la imagen dibujada (no de la
+// caja), este cálculo no depende de la forma ni el tamaño del slot
+// destino — es el mismo para un pin, un sticker cuadrado o una etiqueta
+// rectangular.
+export function computeFaceCenteredOffset(naturalW, naturalH, centerFrac) {
   return {
-    offsetXFrac: 0.5 - faceCenterFrac.xFrac,
-    offsetYFrac: 0.5 - faceCenterFrac.yFrac,
+    offsetXFrac: 0.5 - centerFrac.xFrac,
+    offsetYFrac: 0.5 - centerFrac.yFrac,
   };
 }
 

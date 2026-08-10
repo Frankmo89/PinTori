@@ -41,14 +41,21 @@ Every one of these gets a designed-in solution, not a help page.
 
 | Label | Finished diameter | Print circle (cut) | Safe zone |
 |---|---|---|---|
+| **Default** | **85 mm** | **105 mm** | **73 mm** |
 | Small | 25 mm | 32 mm | 20 mm |
 | Medium | 32 mm | 41 mm | 26 mm |
 | Large | 58 mm | 70 mm | 48 mm |
 | XL | 75 mm | 89 mm | 62 mm |
-| **Frank's machine** | **70 mm** | **85 mm** | **58 mm** |
+
+Default is preselected on load — it's the size that maps to the button press
+actually in use. Its cut diameter (105 mm) was measured directly with
+calipers against the physical mold on 2026-08-10, not derived from the rule
+of thumb below — that rule assumed a 14 mm bleed, but this press's real
+bleed is 20 mm. If the mold is ever swapped, re-measure before touching this
+row; don't reapply the formula to it.
 
 Rule of thumb if a size is added later: cut diameter ≈ finished + 14 mm,
-safe zone ≈ finished − 12 mm.
+safe zone ≈ finished − 12 mm. (Confirmed wrong for Default — see above.)
 
 ### Sheets
 
@@ -63,8 +70,11 @@ safe zone ≈ finished − 12 mm.
 
 When every slot on the sheet is a circle of the same size, layout stays a
 uniform grid, computed dynamically from sheet size and cut diameter — do not
-hardcode 2×3. Minimum 6 mm gap between circles, minimum 6 mm page margin.
-For 85 mm circles on Letter this lands on 2 columns × 3 rows = 6 pins.
+hardcode a column/row count. Minimum 6 mm gap between circles, minimum 6 mm
+page margin. For the 105 mm Default circle on Letter or A4 this lands on
+1 column × 2 rows = 2 pins per sheet — a real yield drop from the smaller
+sizes, not a bug; a 105 mm circle plus margins genuinely only fits twice on
+either sheet.
 
 This uniform-grid path must keep working exactly as-is once mixed shapes are
 introduced (section 4, below) — mixed-shape sheets use packing instead, but a
@@ -81,8 +91,9 @@ pressed into a button.
 
 ### 4.1 Circle
 
-The only shape that maps to a real physical product (Frank's machine and the
-other button presses). Keeps everything already built for it:
+The only shape that maps to a real physical product (the Default button
+press and the other sizes in the table). Keeps everything already built
+for it:
 
 - Cut diameter + safe zone, per the size table above
 - Dimmed fold-under ring between safe zone and cut edge while adjusting —
@@ -181,7 +192,7 @@ Renders an offscreen canvas at full 300 DPI resolution containing:
 - PDF at 300 DPI (primary — most reliable for exact scale)
 - PNG at 300 DPI (fallback)
 
-Filename should include size and date, e.g. `pintori-70mm-2026-08-09.pdf`.
+Filename should include size and date, e.g. `pintori-85mm-2026-08-10.pdf`.
 
 ### 5.7 Print guidance
 

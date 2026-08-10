@@ -22,7 +22,12 @@ export function closeDownloadScreen() {
   }
 }
 
-export function showDownloadScreen(triggerEl) {
+// fallbackNote: true cuando el trigger fue "Compartir" pero el
+// navegador no pudo adjuntar el PDF (sin Web Share de archivos) y en
+// vez de eso se descargó como siempre — el usuario necesita saber que
+// tiene que adjuntarlo a mano, si no, va a esperar un correo que nunca
+// se armó solo.
+export function showDownloadScreen(triggerEl, { fallbackNote = false } = {}) {
   closeDownloadScreen();
   returnFocusTarget = triggerEl || null;
 
@@ -40,6 +45,11 @@ export function showDownloadScreen(triggerEl) {
   title.id = 'download-modal-title';
   title.textContent = t('downloadTitle');
 
+  const note = document.createElement('p');
+  note.className = 'modal-share-fallback';
+  note.textContent = t('shareFallback');
+  note.hidden = !fallbackNote;
+
   const list = document.createElement('ul');
   list.className = 'modal-tips';
   [t('tipScale'), t('tipRuler'), t('tipPaper'), t('tipCut')].forEach((tip) => {
@@ -54,7 +64,7 @@ export function showDownloadScreen(triggerEl) {
   closeBtn.textContent = t('close');
   closeBtn.addEventListener('click', closeDownloadScreen);
 
-  modal.append(title, list, closeBtn);
+  modal.append(title, note, list, closeBtn);
   backdrop.appendChild(modal);
   document.body.appendChild(backdrop);
 
