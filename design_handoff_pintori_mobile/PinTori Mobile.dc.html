@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap"><style>
+body{margin:0;background:#f0eee9;font-family:'Nunito',system-ui,sans-serif}
+a{color:#23405C}a:hover{color:#33363D}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+.dv-note{margin:0 0 20px;max-width:760px;font:13px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.6)}
+.no-sb{scrollbar-width:none;-ms-overflow-style:none}.no-sb::-webkit-scrollbar{display:none;width:0;height:0}
+@keyframes sparkle-twinkle{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}
+</style></helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">PinTori móvil — rework nativo</span></div>
+<p class="dv-note">Cambio de estructura: la hoja deja de ser la pantalla de entrada. Ahora la app abre en <strong>Mis hojas</strong> (lo que ya se guarda en IndexedDB, pero visible), la hoja se edita a pantalla completa con barra fija abajo, y el panel de slot deja de ser un bottom-sheet que tapa el círculo que estás editando: pasa a ser una pantalla propia con el círculo grande arriba y el anillo de doblez a tamaño real. Tokens, textos y tamaños salen de <code>tokens.css</code>, <code>i18n.js</code> y <code>constants.js</code> tal cual.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>iOS — prototipo navegable (tocá los círculos)</div>
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+<div style="height:100%;background:linear-gradient(168deg,#E9F2FB 0%,#F4F1FA 38%,#FBF3E4 72%,#F1F8EA 100%);color:#33363D;font-family:'Nunito',system-ui,sans-serif;display:flex;flex-direction:column;position:relative;overflow:hidden">
+
+<sc-if value="{{ isOnb }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;padding:96px 32px 40px">
+  <div style="flex:1;display:flex;align-items:center;justify-content:center">
+    <div style="width:220px;height:220px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:96px;background:{{ onbBg }};box-shadow:0 8px 28px rgba(0,0,0,.10)">{{ onbGlyph }}</div>
+  </div>
+  <h2 style="margin:0 0 12px;font-size:28px;font-weight:700;letter-spacing:-.01em">{{ onbTitle }}</h2>
+  <p style="margin:0 0 28px;font-size:16px;line-height:1.5;color:#6B7078">{{ onbBody }}</p>
+  <div style="display:flex;gap:8px;margin-bottom:20px">
+    <sc-for list="{{ onbDots }}" as="d" hint-placeholder-count="3">
+      <span style="width:10px;height:10px;border-radius:50%;background:{{ d.bg }}"></span>
+    </sc-for>
+  </div>
+  <button type="button" onClick="{{ onbNext }}" style="font-family:inherit;font-weight:600;font-size:20px;background:#8FBCE6;color:#23405C;border:none;border-radius:999px;min-height:56px;padding:16px 32px;width:100%;cursor:pointer">{{ onbCta }}</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSheets }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;overflow:auto;padding:72px 20px 120px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+    <h1 style="margin:0;font-size:40px;font-weight:700;letter-spacing:-.02em;position:relative">Mis hojas
+      <svg viewBox="0 0 24 24" aria-hidden="true" style="position:absolute;top:-6px;right:-22px;width:20px;height:20px;fill:#8FBCE6;animation:sparkle-twinkle 2.4s ease-in-out infinite"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true" style="position:absolute;bottom:2px;right:-6px;width:11px;height:11px;fill:#B6DDA0;animation:sparkle-twinkle 2.4s ease-in-out .6s infinite"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
+    </h1>
+  </div>
+  <p style="margin:0 0 24px;color:#6B7078;font-size:16px">Todo se guarda solo en este teléfono.</p>
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <sc-for list="{{ sheets }}" as="sh" hint-placeholder-count="3">
+      <button type="button" onClick="{{ sh.onTap }}" style="font-family:inherit;text-align:left;display:flex;align-items:center;gap:16px;background:{{ sh.bg }};border:1px solid {{ sh.bd }};border-radius:16px;padding:16px;cursor:pointer">
+        <div style="display:grid;grid-template-columns:repeat(2,26px);gap:6px;flex:none">
+          <sc-for list="{{ sh.dots }}" as="d" hint-placeholder-count="4">
+            <span style="width:26px;height:26px;border-radius:50%;background:{{ d.bg }};border:1px solid #E3E8EF"></span>
+          </sc-for>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:20px;font-weight:700;color:#33363D">{{ sh.name }}</div>
+          <div style="font-size:14px;color:#6B7078;margin-top:2px">{{ sh.meta }}</div>
+        </div>
+        <svg width="8" height="14" viewBox="0 0 8 14" style="flex:none"><path d="M1 1l6 6-6 6" stroke="#6B7078" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </sc-for>
+  </div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;padding:16px 20px 34px;background:linear-gradient(to top,#FBF3E4 62%,rgba(251,243,228,0))">
+  <button type="button" onClick="{{ newSheet }}" style="font-family:inherit;font-weight:600;font-size:20px;background:#8FBCE6;color:#23405C;border:none;border-radius:999px;min-height:56px;width:100%;cursor:pointer">Nueva hoja</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ isEditor }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;padding:60px 20px 10px;display:flex;align-items:center;gap:12px">
+  <button type="button" onClick="{{ toSheets }}" style="font-family:inherit;flex:none;width:44px;height:44px;border-radius:50%;border:1px solid rgba(227,232,239,.9);background:rgba(255,255,255,.75);display:flex;align-items:center;justify-content:center;cursor:pointer">
+    <svg width="11" height="18" viewBox="0 0 12 20"><path d="M10 2L2 10l8 8" stroke="#33363D" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:20px;font-weight:700;line-height:1.2">Hoja de Tori</div>
+    <div style="font-size:14px;color:#6B7078">{{ sheetMeta }}</div>
+  </div>
+</div>
+<div class="no-sb" style="flex:none;display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:8px 20px 12px">
+  <sc-for list="{{ sizeChips }}" as="c" hint-placeholder-count="5">
+    <button type="button" onClick="{{ c.onTap }}" style="font-family:inherit;flex:none;font-weight:600;font-size:14px;min-height:44px;padding:8px 16px;border-radius:999px;cursor:pointer;color:{{ c.fg }};background:{{ c.bg }};border:1.5px solid {{ c.bd }}">{{ c.label }}</button>
+  </sc-for>
+</div>
+<div style="flex:1;overflow:auto;padding:4px 20px 150px">
+  <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center">
+    <sc-for list="{{ gridSlots }}" as="s" hint-placeholder-count="6">
+      <div style="position:relative;flex:none">
+        <button type="button" onClick="{{ s.onTap }}" style="font-family:inherit;position:relative;width:150px;height:150px;border-radius:50%;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;background:{{ s.bg }};border:{{ s.border }};box-shadow:{{ s.shadow }}">
+          <span style="font-size:{{ s.gsize }};color:{{ s.gcolor }};font-weight:700;line-height:1;text-align:center;padding:0 10px">{{ s.glyph }}</span>
+          <span style="position:absolute;inset:7px;border-radius:50%;border:1.5px dashed {{ s.cutline }};pointer-events:none"></span>
+        </button>
+        <sc-if value="{{ s.warn }}" hint-placeholder-val="{{ false }}">
+          <span style="position:absolute;top:-2px;right:-2px;width:28px;height:28px;border-radius:50%;background:#FBF2DC;color:#8A6522;border:1.5px solid #D8B979;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center">!</span>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;padding:14px 20px 34px;background:rgba(255,253,247,.92);backdrop-filter:blur(12px);border-top:1px solid rgba(227,232,239,.8);display:flex;align-items:center;gap:12px">
+  <button type="button" onClick="{{ exportPdf }}" style="font-family:inherit;flex:1;font-weight:600;font-size:20px;background:#8FBCE6;color:#23405C;border:none;border-radius:999px;min-height:56px;cursor:pointer">Generar PDF</button>
+  <button type="button" onClick="{{ exportPdf }}" style="font-family:inherit;flex:none;width:56px;height:56px;border-radius:50%;border:1px solid #E3E8EF;background:#FFFFFF;cursor:pointer;display:flex;align-items:center;justify-content:center">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#33363D" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7"/><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/></svg>
+  </button>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSlot }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;padding:60px 20px 8px;display:flex;align-items:center;justify-content:space-between">
+  <button type="button" onClick="{{ closeSlot }}" style="font-family:inherit;min-height:44px;padding:8px 12px;border:none;background:none;color:#6B7078;font-size:16px;cursor:pointer">Cancelar</button>
+  <button type="button" onClick="{{ closeSlot }}" style="font-family:inherit;min-height:44px;padding:8px 20px;border:none;border-radius:999px;background:#8FBCE6;color:#23405C;font-size:16px;font-weight:700;cursor:pointer">Listo</button>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;align-items:center;padding:8px 20px 16px">
+  <div style="position:relative;width:250px;height:250px">
+    <div style="position:absolute;inset:0;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:{{ act.bg }};border:{{ act.border }};box-shadow:0 1px 4px rgba(0,0,0,.12)">
+      <span style="font-size:{{ act.gsize }};color:{{ act.gcolor }};font-weight:700;text-align:center;padding:0 16px;line-height:1.1">{{ act.glyph }}</span>
+    </div>
+    <div style="position:absolute;inset:0;border-radius:50%;background:rgba(30,30,35,0.45);opacity:{{ foldOpacity }};transition:opacity 100ms ease;pointer-events:none;-webkit-mask-image:radial-gradient(circle, transparent 0 {{ safePct }}, black {{ safePct }} 100%);mask-image:radial-gradient(circle, transparent 0 {{ safePct }}, black {{ safePct }} 100%)"></div>
+    <div style="position:absolute;inset:11px;border-radius:50%;border:1.5px dashed {{ act.cutline }};pointer-events:none"></div>
+  </div>
+  <p style="margin:12px 0 0;font-size:14px;color:#6B7078;text-align:center;max-width:280px">{{ slotHint }}</p>
+</div>
+<div style="flex:1;background:#FFFDF7;border-top:1px solid rgba(227,232,239,.8);border-radius:16px 16px 0 0;padding:16px 20px 34px;display:flex;flex-direction:column;gap:16px;overflow:auto">
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="4">
+      <button type="button" onClick="{{ tb.onTap }}" style="font-family:inherit;font-weight:600;font-size:14px;min-height:40px;padding:8px 16px;border-radius:999px;cursor:pointer;color:{{ tb.fg }};background:{{ tb.bg }};border:1.5px solid {{ tb.bd }}">{{ tb.label }}</button>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ tabPhoto }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <button type="button" onClick="{{ addPhoto }}" style="font-family:inherit;align-self:flex-start;min-height:44px;padding:8px 24px;border:1px solid #E3E8EF;border-radius:999px;background:#FFFFFF;font-weight:600;font-size:14px;color:#33363D;cursor:pointer">Foto</button>
+    <sc-if value="{{ hasPhoto }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:#6B7078">
+          <span style="flex:none">Zoom</span>
+          <input type="range" min="100" max="220" value="{{ zoom }}" onChange="{{ setZoom }}" style="flex:1;height:44px;accent-color:#8FBCE6" />
+        </div>
+        <p style="margin:0;padding:8px;font-size:14px;color:#8A6522;background:#FBF2DC;border:1px solid #D8B979;border-radius:8px">Esta foto puede salir borrosa al imprimir</p>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ tabText }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <input type="text" value="{{ textValue }}" onChange="{{ setText }}" placeholder="Nombre..." style="font-family:inherit;font-size:16px;color:#33363D;border:1px solid #E3E8EF;border-radius:8px;padding:12px;min-height:44px" />
+    <div style="display:flex;gap:8px">
+      <sc-for list="{{ textSizes }}" as="ts" hint-placeholder-count="3">
+        <button type="button" onClick="{{ ts.onTap }}" style="font-family:inherit;width:44px;height:44px;border-radius:50%;font-weight:700;cursor:pointer;color:{{ ts.fg }};background:{{ ts.bg }};border:{{ ts.bd }}">{{ ts.key }}</button>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ tabEmoji }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-wrap:wrap;gap:8px">
+    <sc-for list="{{ emojiBtns }}" as="e" hint-placeholder-count="8">
+      <button type="button" onClick="{{ e.onTap }}" style="font-family:inherit;width:44px;height:44px;font-size:20px;border-radius:50%;cursor:pointer;background:{{ e.bg }};border:{{ e.bd }}">{{ e.char }}</button>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ tabBg }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;align-items:center;gap:8px">
+    <sc-for list="{{ colorBtns }}" as="cb" hint-placeholder-count="4">
+      <button type="button" onClick="{{ cb.onTap }}" style="width:44px;height:44px;border-radius:50%;cursor:pointer;background:{{ cb.hex }};border:1px solid #E3E8EF;box-shadow:{{ cb.ring }}"></button>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+    <button type="button" onClick="{{ repeatIn }}" style="font-family:inherit;font-weight:600;font-size:14px;min-height:44px;border-radius:999px;background:transparent;color:#33363D;border:1px solid #E3E8EF;cursor:pointer">Repetir en...</button>
+    <button type="button" onClick="{{ clearSlot }}" style="font-family:inherit;font-weight:600;font-size:14px;min-height:44px;border-radius:999px;background:transparent;color:#33363D;border:1px solid #E3E8EF;cursor:pointer">Quitar</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;padding:88px 24px 34px">
+  <div style="align-self:center;width:132px;height:132px;border-radius:50%;background:#B6DDA0;display:flex;align-items:center;justify-content:center;margin-bottom:24px">
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2E4A22" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l6 6L20 6"/></svg>
+  </div>
+  <h2 style="margin:0 0 16px;font-size:28px;font-weight:700;text-align:center">¡Tu hoja está lista!</h2>
+  <ul style="margin:0 0 24px;padding-left:24px;display:flex;flex-direction:column;gap:8px">
+    <li style="font-size:16px;line-height:1.4;color:#33363D">Imprime a escala 100% — desactiva "ajustar a la página"</li>
+    <li style="font-size:16px;line-height:1.4;color:#33363D">Verifica la regla impresa contra una regla real antes de cortar</li>
+    <li style="font-size:16px;line-height:1.4;color:#33363D">Usa papel couché o fotográfico de 120–160 gsm</li>
+    <li style="font-size:16px;line-height:1.4;color:#33363D">Corta sobre la línea punteada, con cortador circular si tienes uno</li>
+  </ul>
+  <div style="flex:1"></div>
+  <button type="button" onClick="{{ shareSheet }}" style="font-family:inherit;font-weight:600;font-size:20px;background:#8FBCE6;color:#23405C;border:none;border-radius:999px;min-height:56px;cursor:pointer;margin-bottom:8px">Compartir por correo</button>
+  <button type="button" onClick="{{ closeDone }}" style="font-family:inherit;font-size:16px;color:#6B7078;background:none;border:none;text-decoration:underline;min-height:56px;cursor:pointer">Cerrar</button>
+</div>
+</sc-if>
+
+</div>
+</x-import>
+</div>
+
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Android — misma estructura, barra fija y FAB de exportar</div>
+<x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" hint-size="402px,874px">
+<div style="height:100%;background:linear-gradient(168deg,#E9F2FB 0%,#F4F1FA 38%,#FBF3E4 72%,#F1F8EA 100%);color:#33363D;font-family:'Nunito',system-ui,sans-serif;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div style="flex:none;padding:20px 20px 8px;display:flex;align-items:center;gap:12px">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#33363D" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:20px;font-weight:700;line-height:1.2">Hoja de Tori</div>
+      <div style="font-size:14px;color:#6B7078">Default · 6 pines · Carta</div>
+    </div>
+  </div>
+  <div style="flex:none;display:flex;gap:8px;overflow:hidden;padding:8px 20px 12px">
+    <span style="flex:none;font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center;padding:8px 16px;border-radius:999px;color:#23405C;background:#8FBCE6;border:1.5px solid #8FBCE6">Default</span>
+    <span style="flex:none;font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center;padding:8px 16px;border-radius:999px;color:#33363D;background:#FFFFFF;border:1.5px solid #E3E8EF">Small</span>
+    <span style="flex:none;font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center;padding:8px 16px;border-radius:999px;color:#33363D;background:#FFFFFF;border:1.5px solid #E3E8EF">Medium</span>
+    <span style="flex:none;font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center;padding:8px 16px;border-radius:999px;color:#33363D;background:#FFFFFF;border:1.5px solid #E3E8EF">Large</span>
+  </div>
+  <div style="flex:1;overflow:hidden;padding:4px 20px 20px">
+    <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center">
+      <div style="position:relative;width:150px;height:150px;border-radius:50%;overflow:hidden;background:linear-gradient(140deg,#8FBCE6,#B6DDA0 55%,#FFE9A8);box-shadow:0 1px 4px rgba(0,0,0,.12)"><span style="position:absolute;inset:7px;border-radius:50%;border:1.5px dashed rgba(255,255,255,.6)"></span></div>
+      <div style="position:relative;width:150px;height:150px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:56px;background:#FFE9A8;box-shadow:0 1px 4px rgba(0,0,0,.12)">⭐<span style="position:absolute;inset:7px;border-radius:50%;border:1.5px dashed rgba(92,74,18,.25)"></span></div>
+      <div style="position:relative;width:150px;height:150px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#2E4A22;background:#B6DDA0;box-shadow:0 1px 4px rgba(0,0,0,.12)">Tori<span style="position:absolute;inset:7px;border-radius:50%;border:1.5px dashed rgba(46,74,34,.25)"></span></div>
+      <div style="position:relative;width:150px;height:150px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;color:#6B7078;background:rgba(255,255,255,.62);border:1.5px dashed #CBD8E6;box-sizing:border-box">+</div>
+    </div>
+  </div>
+  <div style="position:absolute;right:20px;bottom:104px;width:64px;height:64px;border-radius:20px;background:#8FBCE6;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.18)">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#23405C" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7"/><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/></svg>
+  </div>
+  <div style="flex:none;padding:14px 20px 20px;background:rgba(255,253,247,.92);border-top:1px solid rgba(227,232,239,.8)">
+    <div style="font-family:inherit;font-weight:600;font-size:20px;background:#8FBCE6;color:#23405C;border-radius:999px;min-height:56px;display:flex;align-items:center;justify-content:center">Generar PDF</div>
+  </div>
+</div>
+</x-import>
+</div>
+
+</div>
+<p class="dv-next">Probá: "en <a class="dv-oid" href="#2a">2a</a>, que el editor de slot sea bottom-sheet en vez de pantalla completa" · "agregá la pantalla de Repetir en..." · "más chicos: círculos más grandes y menos texto"</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Hoy — la app web en un teléfono (390px)</span></div>
+<p class="dv-note">Recreación de <code>index.html</code> + <code>base.css</code> / <code>editor.css</code> / <code>modal.css</code> tal como se ven hoy a 390px: slot de 140px (cutMm 70 × EDITOR_PX_PER_MM 2), gap de 24px, panel de slot como bottom-sheet fijo bajo 600px, y la pantalla de descarga.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Editor</div>
+<div class="dv-card" style="width:390px;height:844px;position:relative;overflow:hidden;background:#FBFCFE;color:#33363D;font-family:'Nunito',system-ui,sans-serif">
+  <div style="padding:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+      <div style="position:relative;display:inline-block">
+        <h1 style="position:relative;font-size:56px;font-weight:700;letter-spacing:-.02em;margin:0 0 8px 0">PinTori
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="position:absolute;top:-6px;right:-22px;width:22px;height:22px;fill:#8FBCE6;animation:sparkle-twinkle 2.4s ease-in-out infinite"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="position:absolute;bottom:2px;right:-6px;width:12px;height:12px;fill:#B6DDA0;animation:sparkle-twinkle 2.4s ease-in-out .6s infinite"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="position:absolute;top:6px;right:8px;width:9px;height:9px;fill:#FFE9A8;animation:sparkle-twinkle 2.4s ease-in-out 1.2s infinite"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
+        </h1>
+      </div>
+      <span style="display:inline-flex;align-items:center;min-height:56px;font-size:16px;color:#6B7078;text-decoration:underline;padding:8px">English</span>
+    </div>
+    <p style="color:#6B7078;margin:0 0 24px 0;font-size:16px">Toca un círculo para agregar foto, texto, emoji o color.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px 0">
+      <span style="font-weight:600;font-size:14px;color:#23405C;background:#8FBCE6;border:1.5px solid #8FBCE6;border-radius:999px;min-height:44px;display:inline-flex;align-items:center;padding:8px 16px">Default</span>
+      <span style="font-weight:600;font-size:14px;color:#33363D;background:#FFFFFF;border:1.5px solid #E3E8EF;border-radius:999px;min-height:44px;display:inline-flex;align-items:center;padding:8px 16px">Small</span>
+      <span style="font-weight:600;font-size:14px;color:#33363D;background:#FFFFFF;border:1.5px solid #E3E8EF;border-radius:999px;min-height:44px;display:inline-flex;align-items:center;padding:8px 16px">Medium</span>
+      <span style="font-weight:600;font-size:14px;color:#33363D;background:#FFFFFF;border:1.5px solid #E3E8EF;border-radius:999px;min-height:44px;display:inline-flex;align-items:center;padding:8px 16px">Large</span>
+      <span style="font-weight:600;font-size:14px;color:#33363D;background:#FFFFFF;border:1.5px solid #E3E8EF;border-radius:999px;min-height:44px;display:inline-flex;align-items:center;padding:8px 16px">XL</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:24px">
+      <div style="position:relative;width:140px;height:140px;border-radius:50%;background:linear-gradient(140deg,#8FBCE6,#B6DDA0 55%,#FFE9A8);box-shadow:0 1px 4px rgba(0,0,0,.12)"></div>
+      <div style="position:relative;width:140px;height:140px;border-radius:50%;background:#FFFFFF;border:1.5px dashed #E3E8EF;box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;font-size:28px;color:#6B7078">+</div>
+      <div style="position:relative;width:140px;height:140px;border-radius:50%;background:#FFE9A8;box-shadow:0 1px 4px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;font-size:52px">⭐</div>
+      <div style="position:relative;width:140px;height:140px;border-radius:50%;background:#FFFFFF;border:1.5px dashed #E3E8EF;box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;font-size:28px;color:#6B7078">+</div>
+      <div style="position:relative;width:140px;height:140px;border-radius:50%;background:#B6DDA0;box-shadow:0 0 0 3px #D8B979,0 1px 4px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#2E4A22">Tori
+        <span style="position:absolute;top:-4px;right:-4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#FBF2DC;color:#8A6522;border:1.5px solid #D8B979;font-size:14px;font-weight:700">!</span>
+      </div>
+      <div style="position:relative;width:140px;height:140px;border-radius:50%;background:#FFFFFF;border:1.5px dashed #E3E8EF;box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;font-size:28px;color:#6B7078">+</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:16px;margin-top:32px">
+      <span style="font-weight:600;font-size:20px;background:#8FBCE6;color:#23405C;border-radius:999px;min-height:56px;display:inline-flex;align-items:center;padding:16px 32px">Generar PDF</span>
+      <span style="display:inline-flex;align-items:center;min-height:56px;font-size:16px;color:#6B7078;text-decoration:underline;padding:8px">Compartir por correo</span>
+      <span style="display:inline-flex;align-items:center;min-height:56px;font-size:16px;color:#6B7078;text-decoration:underline;padding:8px">Descargar PNG</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Panel de slot (bottom-sheet, &lt;600px)</div>
+<div class="dv-card" style="width:390px;height:844px;position:relative;overflow:hidden;background:#FBFCFE;color:#33363D;font-family:'Nunito',system-ui,sans-serif">
+  <div style="padding:24px;filter:none">
+    <h1 style="font-size:56px;font-weight:700;letter-spacing:-.02em;margin:0 0 8px 0">PinTori</h1>
+    <p style="color:#6B7078;margin:0 0 24px 0;font-size:16px">Toca un círculo para agregar foto, texto, emoji o color.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:24px">
+      <div style="position:relative;width:140px;height:140px;border-radius:50%;background:linear-gradient(140deg,#8FBCE6,#B6DDA0 55%,#FFE9A8);box-shadow:0 1px 4px rgba(0,0,0,.12)">
+        <span style="position:absolute;inset:0;border-radius:50%;background:rgba(30,30,35,0.45);-webkit-mask-image:radial-gradient(circle, transparent 0 86%, black 86% 100%);mask-image:radial-gradient(circle, transparent 0 86%, black 86% 100%)"></span>
+      </div>
+      <div style="position:relative;width:140px;height:140px;border-radius:50%;background:#FFFFFF;border:1.5px dashed #E3E8EF;box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;font-size:28px;color:#6B7078">+</div>
+    </div>
+  </div>
+  <div style="position:absolute;inset:0;background:rgba(20,20,25,0.45)"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#FFFFFF;border:1px solid #E3E8EF;border-radius:16px 16px 0 0;box-shadow:0 -8px 24px rgba(0,0,0,.2);padding:16px;display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span style="font-weight:600;font-size:14px;color:#23405C;background:#8FBCE6;border:1.5px solid #8FBCE6;border-radius:999px;min-height:40px;display:inline-flex;align-items:center;padding:8px 16px">Foto</span>
+      <span style="font-weight:600;font-size:14px;color:#6B7078;background:#FBFCFE;border:1.5px solid #E3E8EF;border-radius:999px;min-height:40px;display:inline-flex;align-items:center;padding:8px 16px">Texto</span>
+      <span style="font-weight:600;font-size:14px;color:#6B7078;background:#FBFCFE;border:1.5px solid #E3E8EF;border-radius:999px;min-height:40px;display:inline-flex;align-items:center;padding:8px 16px">Emoji</span>
+      <span style="font-weight:600;font-size:14px;color:#6B7078;background:#FBFCFE;border:1.5px solid #E3E8EF;border-radius:999px;min-height:40px;display:inline-flex;align-items:center;padding:8px 16px">Fondo</span>
+      <span style="font-weight:600;font-size:14px;color:#6B7078;background:#FBFCFE;border:1.5px solid #E3E8EF;border-radius:999px;min-height:40px;display:inline-flex;align-items:center;padding:8px 16px">Tipo</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <span style="align-self:flex-start;min-height:44px;display:inline-flex;align-items:center;padding:8px 24px;border:1px solid #E3E8EF;border-radius:999px;background:#FFFFFF;font-weight:600;font-size:14px;color:#33363D">Foto</span>
+      <p style="margin:0;font-size:14px;color:#6B7078;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">tori-cumple-2026.jpg</p>
+      <p style="margin:0;padding:8px;font-size:14px;color:#8A6522;background:#FBF2DC;border:1px solid #D8B979;border-radius:8px">Esta foto puede salir borrosa al imprimir</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-weight:600;font-size:14px;border-radius:999px;padding:8px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;background:transparent;color:#33363D;border:1px solid #E3E8EF">Quitar</span>
+      <span style="font-weight:600;font-size:14px;border-radius:999px;padding:8px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;background:transparent;color:#33363D;border:1px solid #E3E8EF">Repetir en...</span>
+      <span style="font-weight:600;font-size:14px;border-radius:999px;padding:8px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;background:#8FBCE6;color:#23405C">Llenar todos con este diseño</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Pantalla de descarga</div>
+<div class="dv-card" style="width:390px;height:844px;position:relative;overflow:hidden;background:#FBFCFE;font-family:'Nunito',system-ui,sans-serif">
+  <div style="position:absolute;inset:0;background:rgba(20,20,25,0.45);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="background:#FFFFFF;border-radius:16px;padding:32px;max-width:360px;width:100%;box-shadow:0 16px 40px rgba(0,0,0,.25)">
+      <h2 style="margin:0 0 16px 0;font-size:28px;font-weight:700;color:#33363D">¡Tu hoja está lista!</h2>
+      <ul style="margin:0 0 24px 0;padding-left:24px;display:flex;flex-direction:column;gap:8px">
+        <li style="font-size:16px;color:#33363D;line-height:1.4">Imprime a escala 100% — desactiva "ajustar a la página"</li>
+        <li style="font-size:16px;color:#33363D;line-height:1.4">Verifica la regla impresa contra una regla real antes de cortar</li>
+        <li style="font-size:16px;color:#33363D;line-height:1.4">Usa papel couché o fotográfico de 120–160 gsm</li>
+        <li style="font-size:16px;color:#33363D;line-height:1.4">Corta sobre la línea punteada, con cortador circular si tienes uno</li>
+      </ul>
+      <span style="width:100%;font-weight:600;font-size:20px;background:#8FBCE6;color:#23405C;border-radius:999px;min-height:56px;display:inline-flex;align-items:center;justify-content:center;padding:16px 32px;box-sizing:border-box">Cerrar</span>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1100}}">
+const EMOJIS = ['😀', '🎉', '🐶', '🌈', '⭐', '❤️', '🎈', '🦄'];
+const COLORS = ['#8FBCE6', '#B6DDA0', '#FFE9A8', '#F4C7D8'];
+const SIZES = [
+  { id: 'frank', label: 'Default', cut: 70, safe: 60 },
+  { id: 'small', label: 'Small', cut: 32, safe: 20 },
+  { id: 'medium', label: 'Medium', cut: 41, safe: 26 },
+  { id: 'large', label: 'Large', cut: 70, safe: 48 },
+  { id: 'xl', label: 'XL', cut: 89, safe: 62 },
+];
+const ONB = [
+  { glyph: '📷', bg: '#8FBCE6', title: 'Elegí una foto', body: 'PinTori la encuadra sola: busca la cara o el sujeto y lo deja en el centro del círculo.', cta: 'Siguiente' },
+  { glyph: '✂️', bg: '#B6DDA0', title: 'El anillo oscuro se dobla', body: 'Lo que queda dentro del anillo se pierde al armar el pin. Movés y hacés zoom hasta que lo importante quede adentro.', cta: 'Siguiente' },
+  { glyph: '🖨️', bg: '#FFE9A8', title: 'Imprimí y cortá', body: 'Se arma una hoja lista para imprimir. Nada sale de tu teléfono: no hay cuenta ni servidor.', cta: 'Empezar' },
+];
+const PHOTO_BG = 'linear-gradient(140deg,#8FBCE6,#B6DDA0 55%,#FFE9A8)';
+
+function visual(sl) {
+  if (!sl || sl.kind === 'empty') {
+    return { bg: 'rgba(255,255,255,.62)', glyph: '+', gsize: '34px', gcolor: '#6B7078', border: '1.5px dashed #CBD8E6', shadow: '0 1px 4px rgba(0,0,0,.12)', cutline: 'transparent' };
+  }
+  if (sl.kind === 'emoji') return { bg: '#FFE9A8', glyph: sl.value, gsize: '56px', gcolor: '#33363D', border: 'none', shadow: '0 1px 4px rgba(0,0,0,.12)', cutline: 'rgba(92,74,18,.25)' };
+  if (sl.kind === 'color') return { bg: sl.value, glyph: '', gsize: '0px', gcolor: '#33363D', border: 'none', shadow: '0 1px 4px rgba(0,0,0,.12)', cutline: 'rgba(51,54,61,.22)' };
+  if (sl.kind === 'text') return { bg: '#B6DDA0', glyph: sl.value, gsize: '32px', gcolor: '#2E4A22', border: 'none', shadow: '0 1px 4px rgba(0,0,0,.12)', cutline: 'rgba(46,74,34,.25)' };
+  return { bg: PHOTO_BG, glyph: '', gsize: '0px', gcolor: '#fff', border: 'none', shadow: '0 1px 4px rgba(0,0,0,.12)', cutline: 'rgba(255,255,255,.6)' };
+}
+
+class Component extends DCLogic {
+  state = {
+    screen: 'editor',
+    onbStep: 0,
+    sizeId: 'frank',
+    tab: 'photo',
+    active: null,
+    zoom: 115,
+    slots: [
+      { kind: 'photo', value: null, warn: false },
+      { kind: 'emoji', value: '⭐', warn: false },
+      { kind: 'text', value: 'Tori', warn: false },
+      { kind: 'photo', value: null, warn: true },
+      { kind: 'empty', value: null, warn: false },
+      { kind: 'empty', value: null, warn: false },
+    ],
+  };
+
+  go = (screen) => this.setState({ screen });
+
+  setSlot = (patch) => {
+    const i = this.state.active;
+    if (i == null) return;
+    const slots = this.state.slots.slice();
+    slots[i] = Object.assign({}, slots[i], patch, { });
+    this.setState({ slots });
+  };
+
+  renderVals() {
+    const S = this.state;
+    const size = SIZES.find((s) => s.id === S.sizeId) || SIZES[0];
+    const act = S.active == null ? null : S.slots[S.active];
+    const actV = visual(act);
+    const filled = S.slots.filter((s) => s.kind !== 'empty').length;
+
+    return {
+      isOnb: S.screen === 'onb',
+      isSheets: S.screen === 'sheets',
+      isEditor: S.screen === 'editor',
+      isSlot: S.screen === 'slot',
+      isDone: S.screen === 'done',
+
+      onbGlyph: ONB[S.onbStep].glyph,
+      onbBg: ONB[S.onbStep].bg,
+      onbTitle: ONB[S.onbStep].title,
+      onbBody: ONB[S.onbStep].body,
+      onbCta: ONB[S.onbStep].cta,
+      onbDots: ONB.map((_, i) => ({ bg: i === S.onbStep ? '#8FBCE6' : '#E3E8EF' })),
+      onbNext: () => (S.onbStep < ONB.length - 1
+        ? this.setState({ onbStep: S.onbStep + 1 })
+        : this.setState({ screen: 'sheets' })),
+
+      sheets: [
+        { name: 'Hoja de Tori', meta: 'Default · 6 pines · hoy', bg: '#DDEBF9', bd: '#C6DDF3', dots: [{ bg: PHOTO_BG }, { bg: '#FFE9A8' }, { bg: '#B6DDA0' }, { bg: '#FFFFFF' }], onTap: () => this.go('editor') },
+        { name: 'Cumple de Mati', meta: 'Small · 24 pines · ayer', bg: '#FBEFD2', bd: '#F1DFB4', dots: [{ bg: '#8FBCE6' }, { bg: PHOTO_BG }, { bg: '#F4C7D8' }, { bg: '#FFE9A8' }], onTap: () => this.go('editor') },
+        { name: 'Stickers del cole', meta: 'Medium · 12 stickers · 3 ago', bg: '#E4F1DA', bd: '#CFE5C0', dots: [{ bg: '#B6DDA0' }, { bg: '#B6DDA0' }, { bg: PHOTO_BG }, { bg: '#8FBCE6' }], onTap: () => this.go('editor') },
+      ],
+      newSheet: () => this.setState({ screen: 'editor', slots: S.slots.map(() => ({ kind: 'empty', value: null, warn: false })) }),
+      toSheets: () => this.go('sheets'),
+      sheetMeta: size.label + ' · ' + filled + ' de 6 · Carta',
+
+      sizeChips: SIZES.map((s) => ({
+        label: s.label,
+        fg: s.id === S.sizeId ? '#23405C' : '#33363D',
+        bg: s.id === S.sizeId ? '#8FBCE6' : '#FFFFFF',
+        bd: s.id === S.sizeId ? '#8FBCE6' : '#E3E8EF',
+        onTap: () => this.setState({ sizeId: s.id }),
+      })),
+
+      gridSlots: S.slots.map((sl, i) => {
+        const v = visual(sl);
+        return Object.assign({}, v, {
+          warn: sl.warn,
+          onTap: () => this.setState({
+            screen: 'slot',
+            active: i,
+            tab: sl.kind === 'empty' ? 'photo' : (sl.kind === 'color' ? 'background' : sl.kind),
+          }),
+        });
+      }),
+
+      act: actV,
+      safePct: Math.round((size.safe / size.cut) * 100) + '%',
+      foldOpacity: act && act.kind === 'photo' ? 1 : 0,
+      slotHint: act && act.kind === 'photo'
+        ? 'Arrastrá la foto y usá el zoom. Lo que queda bajo el anillo oscuro se dobla hacia atrás.'
+        : 'Elegí qué va en este círculo.',
+
+      tabs: [
+        { id: 'photo', label: 'Foto' },
+        { id: 'text', label: 'Texto' },
+        { id: 'emoji', label: 'Emoji' },
+        { id: 'background', label: 'Fondo' },
+      ].map((tb) => ({
+        label: tb.label,
+        fg: S.tab === tb.id ? '#23405C' : '#6B7078',
+        bg: S.tab === tb.id ? '#8FBCE6' : '#FBFCFE',
+        bd: S.tab === tb.id ? '#8FBCE6' : '#E3E8EF',
+        onTap: () => this.setState({ tab: tb.id }),
+      })),
+      tabPhoto: S.tab === 'photo',
+      tabText: S.tab === 'text',
+      tabEmoji: S.tab === 'emoji',
+      tabBg: S.tab === 'background',
+
+      hasPhoto: !!act && act.kind === 'photo',
+      addPhoto: () => this.setSlot({ kind: 'photo', value: null, warn: false }),
+      zoom: S.zoom,
+      setZoom: (e) => this.setState({ zoom: Number(e.target.value) }),
+
+      textValue: act && act.kind === 'text' ? act.value : '',
+      setText: (e) => this.setSlot({ kind: 'text', value: e.target.value || 'Nombre' }),
+      textSizes: ['S', 'M', 'L'].map((k) => ({
+        key: k,
+        fg: k === 'M' ? '#23405C' : '#33363D',
+        bg: k === 'M' ? '#8FBCE6' : '#FFFFFF',
+        bd: k === 'M' ? '2px solid #23405C' : '1px solid #E3E8EF',
+        onTap: () => {},
+      })),
+
+      emojiBtns: EMOJIS.map((ch) => ({
+        char: ch,
+        bg: act && act.kind === 'emoji' && act.value === ch ? '#FBFCFE' : '#FFFFFF',
+        bd: act && act.kind === 'emoji' && act.value === ch ? '2px solid #23405C' : '1px solid #E3E8EF',
+        onTap: () => this.setSlot({ kind: 'emoji', value: ch, warn: false }),
+      })),
+      colorBtns: COLORS.map((hex) => ({
+        hex,
+        ring: act && act.kind === 'color' && act.value === hex ? '0 0 0 3px #FFFFFF, 0 0 0 5px #23405C' : 'none',
+        onTap: () => this.setSlot({ kind: 'color', value: hex, warn: false }),
+      })),
+
+      clearSlot: () => { this.setSlot({ kind: 'empty', value: null, warn: false }); this.go('editor'); },
+      repeatIn: () => this.go('editor'),
+      closeSlot: () => this.setState({ screen: 'editor', active: null }),
+      exportPdf: () => this.go('done'),
+      shareSheet: () => this.go('done'),
+      closeDone: () => this.go('editor'),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
