@@ -15,22 +15,24 @@ function approxEqual(a, b, tolerance) {
 export function runSelfTests() {
   console.log('--- PinTori selftest: geometry.js ---');
 
-  // 2026-08-10: cutMm del tamaño default se corrigió de 85mm (fórmula
-  // finished+14mm) a 105mm (medido directo del molde físico — ver
-  // constants.js). Este assert confirma el diámetro en px que corresponde
-  // imprimir/cortar para ese molde a 300 DPI.
-  const px105 = mmToPx(105);
-  console.log(`105mm a 300 DPI = ${px105.toFixed(2)}px (esperado ~1240.16px)`);
-  console.assert(approxEqual(px105, 1240.16, 1), 'FALLO: 105mm a 300 DPI debería dar ~1240.16px');
+  // 2026-08-10: cutMm del tamaño default pasó por dos correcciones el
+  // mismo día — 85mm (fórmula finished+14mm) -> 105mm (calibrador contra
+  // el molde) -> 70mm (regla de acero contra el pin y el corte reales,
+  // la medición final — ver constants.js). Este assert confirma el
+  // diámetro en px que corresponde imprimir/cortar a 300 DPI para el
+  // valor vigente.
+  const px70 = mmToPx(70);
+  console.log(`70mm a 300 DPI = ${px70.toFixed(2)}px (esperado ~826.77px)`);
+  console.assert(approxEqual(px70, 826.77, 1), 'FALLO: 70mm a 300 DPI debería dar ~826.77px');
 
   const letterFrank = computeGrid({ pinId: 'frank', sheetId: 'letter' });
   console.log(
-    `Carta + tamaño default (105mm cut, margen=${GRID_MIN_MARGIN_MM}mm, gap=${GRID_MIN_GAP_MM}mm): ` +
+    `Carta + tamaño default (70mm cut, margen=${GRID_MIN_MARGIN_MM}mm, gap=${GRID_MIN_GAP_MM}mm): ` +
       `${letterFrank.cols} columnas x ${letterFrank.rows} filas = ${letterFrank.count} pines`
   );
   console.assert(
-    letterFrank.cols === 1 && letterFrank.rows === 2,
-    `FALLO: se esperaba 1x2=2 para 105mm en Carta, dio ${letterFrank.cols}x${letterFrank.rows}`
+    letterFrank.cols === 2 && letterFrank.rows === 3,
+    `FALLO: se esperaba 2x3=6 para 70mm en Carta, dio ${letterFrank.cols}x${letterFrank.rows}`
   );
 
   // Sanity check extra: las dimensiones en px de las hojas deben coincidir

@@ -1,14 +1,20 @@
 // Compone la hoja completa en un canvas offscreen a resolución real de
 // 300 DPI: fondo blanco, cada slot empaquetado en su posición real
-// (mismo drawSlot() que usa el editor — cero lógica de dibujo nueva),
-// la regla de calibración impresa, y el texto de instrucciones en el
-// margen.
+// (mismo drawSlot() que usa el editor — cero lógica de dibujo nueva) y
+// la regla de calibración impresa.
+//
+// 2026-08-10: se quitó el texto "Hoja X · Imprime al 100% — no escalar"
+// del margen (drawMarginCaption) — confirmado con impresión física que
+// el pipeline de export no reescala nada (la regla impresa coincide
+// exacta contra una regla real), así que ese texto era puramente
+// informativo, no una advertencia de un problema real. La regla de
+// calibración (marcas de cm/pulgadas) se mantiene: esa sí es funcional,
+// permite confirmar la escala con una regla física antes de cortar.
 
 import { computeDefaultSlotCount, packSlots, resolveSlotSpec, specToBox, mmToPx } from '../geometry.js';
 import { getState, getSlot, getDefaultSlotType, getSlotType } from '../state.js';
 import { drawSlot, FONT_FAMILY } from '../render.js';
 import { DPI } from '../constants.js';
-import { t } from '../i18n.js';
 
 const RULER_LENGTH_MM = 50.8; // 2 pulgadas exactas: cubre 5cm Y 2in completas
 const CM_LABEL_PX = 26;
@@ -17,7 +23,6 @@ const CM_MAJOR_TICK_PX = 28;
 const CM_MINOR_TICK_PX = 12;
 const IN_MAJOR_TICK_PX = 24;
 const IN_MINOR_TICK_PX = 10;
-const CAPTION_PX = 30;
 const RULER_COLOR = '#555555';
 const BAND_PADDING_MM = 8;
 
@@ -48,7 +53,6 @@ export function renderSheetCanvas() {
 
   const margins = effectiveMargins(packed);
   drawMarginRuler(ctx, packed, margins);
-  drawMarginCaption(ctx, packed, margins);
 
   return { canvas, grid: packed };
 }
@@ -145,35 +149,5 @@ function drawMarginRuler(ctx, packed, margins) {
     ctx.rotate(Math.PI / 2);
   }
   drawRulerLocal(ctx);
-  ctx.restore();
-}
-
-function drawMarginCaption(ctx, packed, margins) {
-  const horizontal = margins.marginYMm >= margins.marginXMm;
-  const text = t('printCaption', packed.sheet.label);
-
-  ctx.save();
-  ctx.fillStyle = RULER_COLOR;
-  ctx.font = `500 ${CAPTION_PX}px ${FONT_FAMILY}`;
-
-  if (horizontal) {
-    // Misma banda inferior que la regla (que ocupa el lado izquierdo),
-    // alineado a la derecha para no superponerse.
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    const xPx = ctx.canvas.width - mmToPx(BAND_PADDING_MM);
-    const yPx = mmToPx(packed.sheet.heightMm - margins.marginYMm / 2);
-    ctx.fillText(text, xPx, yPx);
-  } else {
-    // Misma banda izquierda que la regla (que ocupa la parte de arriba),
-    // anclado cerca del borde inferior y creciendo hacia arriba —
-    // 'right' aquí, con la rotación de +90°, es lo que mantiene el
-    // texto DENTRO de la hoja en vez de salirse por el borde inferior.
-    ctx.translate(mmToPx(margins.marginXMm / 2), ctx.canvas.height - mmToPx(BAND_PADDING_MM));
-    ctx.rotate(Math.PI / 2);
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, 0, 0);
-  }
   ctx.restore();
 }

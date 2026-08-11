@@ -41,18 +41,22 @@ Every one of these gets a designed-in solution, not a help page.
 
 | Label | Finished diameter | Print circle (cut) | Safe zone |
 |---|---|---|---|
-| **Default** | **85 mm** | **105 mm** | **73 mm** |
+| **Default** | **60 mm** | **70 mm** | **60 mm** |
 | Small | 25 mm | 32 mm | 20 mm |
 | Medium | 32 mm | 41 mm | 26 mm |
 | Large | 58 mm | 70 mm | 48 mm |
 | XL | 75 mm | 89 mm | 62 mm |
 
 Default is preselected on load — it's the size that maps to the button press
-actually in use. Its cut diameter (105 mm) was measured directly with
-calipers against the physical mold on 2026-08-10, not derived from the rule
-of thumb below — that rule assumed a 14 mm bleed, but this press's real
-bleed is 20 mm. If the mold is ever swapped, re-measure before touching this
-row; don't reapply the formula to it.
+actually in use. Its numbers went through two corrections on 2026-08-10:
+first 85/105/73 mm (calipers against the physical mold), then **70 mm cut /
+60 mm finished / 60 mm safe zone** (steel ruler against the actual pressed
+pin and cut, the final measurement). Safe zone is NOT derived from the rule
+of thumb below (which would give 48 mm) — it's measured directly and equals
+the finished diameter exactly. Bleed (cut − finished) is 10 mm here, not the
+~14 mm the generic rule assumes. If the mold is ever swapped, re-measure
+before touching this row; don't reapply the formula to it, that's exactly
+what produced the wrong numbers the first two times.
 
 Rule of thumb if a size is added later: cut diameter ≈ finished + 14 mm,
 safe zone ≈ finished − 12 mm. (Confirmed wrong for Default — see above.)
@@ -71,10 +75,8 @@ safe zone ≈ finished − 12 mm. (Confirmed wrong for Default — see above.)
 When every slot on the sheet is a circle of the same size, layout stays a
 uniform grid, computed dynamically from sheet size and cut diameter — do not
 hardcode a column/row count. Minimum 6 mm gap between circles, minimum 6 mm
-page margin. For the 105 mm Default circle on Letter or A4 this lands on
-1 column × 2 rows = 2 pins per sheet — a real yield drop from the smaller
-sizes, not a bug; a 105 mm circle plus margins genuinely only fits twice on
-either sheet.
+page margin. For the 70 mm Default circle on Letter or A4 this lands on
+2 columns × 3 rows = 6 pins per sheet.
 
 This uniform-grid path must keep working exactly as-is once mixed shapes are
 introduced (section 4, below) — mixed-shape sheets use packing instead, but a
@@ -183,16 +185,20 @@ Renders an offscreen canvas at full 300 DPI resolution containing:
 - A faint center crosshair inside each **circle** slot only (see 4.2)
 - **A calibration ruler in the page margin** — a printed scale with labeled
   centimeter and inch marks, so the user can hold a physical ruler against the
-  printed page and confirm the scale came out right
-- A small line of text in the margin: the button size, the sheet size, and
-  "Print at 100% — do not scale"
+  printed page and confirm the scale came out right. This is the functional
+  piece — physically confirmed against a real ruler on 2026-08-10 (1" landed
+  on 2.5cm, 2" on 5cm exactly).
+
+There used to also be a small line of text in the margin ("Sheet X · Print at
+100% — do not scale"). Removed on 2026-08-10: purely informational, not a
+functional check like the ruler above, and confirmed not needed visually.
 
 ### 5.6 Export
 
 - PDF at 300 DPI (primary — most reliable for exact scale)
 - PNG at 300 DPI (fallback)
 
-Filename should include size and date, e.g. `pintori-85mm-2026-08-10.pdf`.
+Filename should include size and date, e.g. `pintori-60mm-2026-08-10.pdf`.
 
 ### 5.7 Print guidance
 
