@@ -5,7 +5,8 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--color-bg);
+  background: var(--color-bg-gradient);
+  background-attachment: fixed;
   color: var(--color-text);
   font-family: var(--font-family);
 }

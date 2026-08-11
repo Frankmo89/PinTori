@@ -163,7 +163,7 @@
    - <600px: bottom-sheet fijo, ancho completo, separado del slot en vez
      de flotar sobre/cerca de él — ver razón del corte de 600px abajo. */
 .slot-panel {
-  background: var(--color-surface);
+  background: var(--color-surface-warm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   padding: var(--space-2);

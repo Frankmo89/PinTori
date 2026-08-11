@@ -9,6 +9,22 @@
   --color-text-muted: #6B7078;
   --color-border: #E3E8EF;
 
+  /* Fondo pastel de la app (Cambio 1, ver design_handoff_pintori_mobile/README.md).
+     Tinte de los tres pasteles de marca a ~12% de saturación, no colores
+     nuevos. Reemplaza a --color-bg solo en el fondo de pantalla; --color-bg
+     sigue existiendo para superficies internas pequeñas que no deben llevar
+     el degradé. */
+  --color-bg-gradient: linear-gradient(
+    168deg,
+    #E9F2FB 0%,    /* tinte del azul primario  #8FBCE6 */
+    #F4F1FA 38%,   /* transición neutra fría */
+    #FBF3E4 72%,   /* tinte del amarillo acento #FFE9A8 */
+    #F1F8EA 100%   /* tinte del verde secundario #B6DDA0 */
+  );
+  --color-surface-warm: #FFFDF7;  /* barras y sheets sobre el degradé */
+  --color-surface-veil: rgba(255, 255, 255, 0.62); /* slot vacío */
+  --color-border-soft: #CBD8E6;   /* punteado del slot vacío sobre pastel */
+
   /* ---- Paleta pastel: azul / verde / amarillo ----
      Regla: ningún color de esta paleta lleva texto blanco encima.
      Son demasiado claros para pasar contraste con blanco — todos usan
