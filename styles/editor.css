@@ -96,11 +96,43 @@
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   font-size: var(--font-size-xl);
   color: var(--color-text-muted);
   pointer-events: none;
+  background: var(--color-surface-veil);
+  border-radius: inherit;
+}
+
+.slot.shape-circle .slot-empty-icon {
+  border-radius: 50%;
+}
+
+.slot-empty-plus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px dashed var(--color-border-soft);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  color: var(--color-primary-text);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.slot-empty-hint {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  max-width: 70%;
+  text-align: center;
+  line-height: 1.2;
 }
 
 /* Prompt 16: "Repetir en..." — modo de selección de slots destino,
