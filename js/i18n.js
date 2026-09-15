@@ -8,10 +8,10 @@ const STRINGS = {
   es: {
     subtitle: 'Toca un círculo para agregar foto, texto, emoji o color.',
     emptySlotHint: 'Toca para agregar',
-    heroTagline: 'Fotos a pines listos para imprimir — encuadre por rostro, sin subir nada.',
-    heroValue: 'Toca un círculo, ajusta el recorte con la zona de doblez visible, genera el PDF a escala exacta (70 mm corte / 60 mm terminado).',
+    heroTagline: 'Fotos a pines listos para imprimir.',
+    heroValue: 'Encuadre por rostro, zona de doblez visible, PDF a escala exacta.',
     heroStart: 'Empezar',
-    heroDemo: 'Probar con foto demo',
+    heroDemo: 'Probar demo',
     heroPrivacy: 'Todo corre en tu navegador. Nada se sube a un servidor.',
     generatePdf: 'Generar PDF',
     share: 'Compartir por correo',
@@ -59,10 +59,10 @@ const STRINGS = {
   en: {
     subtitle: 'Tap a circle to add a photo, text, emoji, or color.',
     emptySlotHint: 'Tap to add',
-    heroTagline: 'Photos to print-ready pinbacks — face-centered crop, nothing uploaded.',
-    heroValue: 'Tap a circle, adjust with the fold ring visible, generate a true-scale PDF (70 mm cut / 60 mm finished).',
+    heroTagline: 'Photos to print-ready pinbacks.',
+    heroValue: 'Face-centered crop, fold ring visible, true-scale PDF.',
     heroStart: 'Start',
-    heroDemo: 'Try with demo photo',
+    heroDemo: 'Try demo',
     heroPrivacy: 'Everything runs in your browser. Nothing is uploaded to a server.',
     generatePdf: 'Generate PDF',
     share: 'Share by email',
@@ -139,11 +139,15 @@ export function setLang(lang) {
 // Aplica t() a todo elemento marcado con data-i18n / data-i18n-placeholder
 // en el HTML estático. El contenido armado dinámicamente (panel de slot,
 // modal de descarga) llama a t() directo al construirse.
+// Nunca sobrescribe con vacío/undefined — protege fallbacks HTML si una
+// clave falta (p.ej. SW sirviendo i18n viejo).
 export function applyStaticStrings() {
   document.querySelectorAll('[data-i18n]').forEach((el) => {
-    el.textContent = t(el.dataset.i18n);
+    const v = t(el.dataset.i18n);
+    if (v) el.textContent = v;
   });
   document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
-    el.placeholder = t(el.dataset.i18nPlaceholder);
+    const v = t(el.dataset.i18nPlaceholder);
+    if (v) el.placeholder = v;
   });
 }
