@@ -41,8 +41,8 @@ but with geometry and UI that make the right outcome the easy one.
   stays inside the finished 60 mm face.
 - **Calibration ruler** on every exported sheet (cm + inches) so scale is
   physically verifiable.
-- **Auto framing**: face-api.js TinyFaceDetector → smartcrop.js → geometric
-  center. Silent fallbacks; never blocks the user.
+- **Auto framing**: scored candidates (face-api TinyFaceDetector / smartcrop /
+  geometric) with edge penalty; local only. Silent fallbacks. `?debug=1` overlay.
 
 ### face-api vs MediaPipe (MB tradeoff)
 
@@ -75,17 +75,33 @@ Cuando se agrega una foto a un slot, PinTori intenta encontrar el sujeto de
 la imagen y usa esa información para elegir dónde centrar el recorte
 inicial — en vez de centrar siempre en el punto medio geométrico, que casi
 nunca es donde está lo importante si la foto viene de un teléfono sin
-editar. Es una cadena de tres pasadas, cada una un respaldo silencioso de
-la anterior:
+editar. Cada señal es un **candidato puntuado**; gana el de mayor score
+(ya no es un cascade ciego face → smartcrop → 0,0):
 
-1. **Rostro humano** — face-api.js (TinyFaceDetector). La más precisa,
-   cuando aplica.
-2. **Sujeto genérico** — smartcrop.js, solo si la pasada 1 no encontró
-   ningún rostro (dibujos, anime, mascotas, objetos, paisajes).
-3. **Centro geométrico** — si ninguna de las dos anteriores encontró nada,
-   o algo falló cargando cualquiera de las dos. Es el mismo comportamiento
-   que tenía la app antes de que existiera esta pieza — nunca es peor que
-   eso, en el peor caso.
+1. **Rostro humano** — face-api.js (TinyFaceDetector). Multi-face: centro
+   del bbox del *grupo* (unión de todas las caras); `conf` = max score.
+2. **Sujeto genérico** — smartcrop.js (siempre evaluado, no solo si face
+   falló). Dibujos, anime, mascotas, objetos, paisajes.
+3. **Centro geométrico** — siempre disponible como fallback (offset 0,0).
+
+### Scoring formula
+
+```
+score = wFace * faceConf + wSal * saliencyScore - wEdge * edgePenalty
+```
+
+Weights: `wFace=1`, `wSal=0.5`, `wEdge=0.8` — faces dominate when present;
+smartcrop is useful but noisier; edge penalty uses cut vs safe-zone
+geometry so centers hugging the image border (fold/bleed risk) lose.
+See `js/face/centerScoring.js`.
+
+### Debug overlay
+
+Open with `?debug=1` (or set `localStorage` / `sessionStorage` key
+`pintori-debug=1`). `?debug=0` disables. While editing a photo slot, the
+canvas shows cut / safe / fold rings, face bboxes, the winning center
+label + score, and a small HUD (Default 70/60 mm, `px = mm * DPI/25.4`).
+Hidden for normal users; never drawn on export/print.
 
 ### Qué hace, en la práctica
 
@@ -94,24 +110,16 @@ la anterior:
    pequeño (320px para face-api.js, 256px para smartcrop.js) y la
    detección corre sobre esa copia — no sobre el archivo original, que
    puede pesar varios MB.
-3. Se intenta primero encontrar rostros. Si se detecta uno o más, se
-   calcula el rectángulo que los envuelve a todos y se usa su punto medio.
-4. Si no se detectó ningún rostro, se le pasa la misma imagen reducida a
-   smartcrop.js, que busca el recorte cuadrado con más bordes/contraste/
-   saturación (su forma de estimar "lo interesante" de la imagen sin un
-   modelo entrenado) y se usa el centro de ese recorte.
-5. El punto que haya ganado (de cualquiera de las dos pasadas) se traduce
-   a un desplazamiento (`offsetXFrac`/`offsetYFrac`) que lo deja
-   exactamente en el centro del círculo — que es donde siempre cae la zona
-   segura, sin importar el tamaño de pin elegido. No hace falta zoom
-   adicional: centrar ya garantiza que el punto quede dentro de la zona
-   segura.
-6. Si ninguna de las dos pasadas encuentra nada, o cualquiera de los dos
-   modelos no llegó a cargar, no pasa nada especial: el offset se queda en
-   `0,0` (centro geométrico).
-7. El usuario puede arrastrar y hacer zoom manualmente después, en
-   cualquier caso — la detección solo pone el punto de partida, nunca
-   bloquea el ajuste a mano.
+3. Se detectan rostros (si hay) y, en paralelo, smartcrop.js estima un
+   centro de saliencia. Ambos + el centro geométrico entran al scorer.
+4. Gana el candidato con mayor `score` (fórmula arriba). El punto ganador
+   se traduce a `offsetXFrac`/`offsetYFrac` vía `computeFaceCenteredOffset`.
+5. Si face y smartcrop fallan al cargar, solo queda geometric (0,0) — nunca
+   peor que el comportamiento histórico.
+6. El usuario puede arrastrar y hacer zoom manualmente después — la
+   detección solo pone el punto de partida, nunca bloquea el ajuste a mano.
+7. Con `?debug=1`, el overlay del slot muestra anillos cut/safe/fold,
+   bboxes y el label/score del ganador (solo editor, no exportación).
 
 No hay botón para activar nada, no hay insignia "✨ AI" en la interfaz, y no
 se le explica nada al usuario. Si funciona, la foto simplemente aparece
@@ -191,19 +199,17 @@ ruta de código para ese caso.
 
 ### Dónde está el código
 
-- `js/face/faceDetect.js` — carga diferida del script + modelo de
-  face-api.js, reducción de la imagen, detección, y el punto medio de los
-  rostros encontrados (o `null` si no hay ninguno o algo falló). También
-  exporta `downscaleForDetection`, que reutiliza `saliencyDetect.js`.
-- `js/face/saliencyDetect.js` — el respaldo de smartcrop.js: carga
-  diferida, y el centro del recorte "más interesante" (o `null` si algo
-  falló). Mismo contrato de retorno que `faceDetect.js`, para que
-  `slotPanel.js` no necesite tratarlas distinto.
-- `js/render.js` (`computeFaceCenteredOffset`) — traduce el punto medio
-  ganador (de cualquiera de las dos pasadas) a un offset de recorte,
-  reutilizando la misma matemática de posicionamiento de foto que usa el
-  editor y la exportación de la hoja — para que este cálculo nunca pueda
-  desincronizarse del resto del sistema de recorte.
+- `js/face/faceDetect.js` — carga diferida + detección; centro de grupo +
+  bboxes/`conf` (o `null`). Exporta `downscaleForDetection`.
+- `js/face/saliencyDetect.js` — smartcrop.js: centro + `conf` normalizado.
+- `js/face/centerScoring.js` — candidatos, formula de score, edge penalty
+  (cut vs safe), política multi-face (group bbox).
+- `js/editor/photoLoader.js` — corre face+saliency en paralelo, elige
+  ganador, guarda `photo.centerDebug` para el overlay.
+- `js/debug.js` + `js/editor/debugOverlay.js` — flag `?debug=1` y dibujo
+  de anillos/bboxes/HUD (solo editor).
+- `js/render.js` (`computeFaceCenteredOffset`) — traduce el centro ganador
+  a offset; misma matemática que editor y exportación.
 
 ---
 

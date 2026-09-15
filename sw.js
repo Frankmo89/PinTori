@@ -1,6 +1,6 @@
 /* PinTori service worker — cache static shell; network-first for HTML,
    cache-first for vendored ML/libs (large, immutable in a release). */
-const CACHE_VERSION = 'pintori-v2';
+const CACHE_VERSION = 'pintori-v3';
 const PRECACHE = [
   './',
   './index.html',
@@ -16,6 +16,12 @@ const PRECACHE = [
   './js/constants.js',
   './js/geometry.js',
   './js/render.js',
+  './js/debug.js',
+  './js/face/faceDetect.js',
+  './js/face/saliencyDetect.js',
+  './js/face/centerScoring.js',
+  './js/editor/photoLoader.js',
+  './js/editor/debugOverlay.js',
   './assets/favicon.svg',
   './assets/manifest.webmanifest',
   './assets/demo-face.jpg',
