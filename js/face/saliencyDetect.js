@@ -1,7 +1,8 @@
 // Segunda pasada de encuadre, solo cuando face-api.js no encontró
 // ningún rostro humano (dibujos, anime, mascotas, objetos, paisajes) —
-// ver README.md para la cadena completa: rostro humano (face-api.js) ->
-// sujeto genérico (smartcrop.js, este archivo) -> centro geométrico.
+// ver README.md para la cadena completa. Con centerScoring.js, smartcrop
+// ya no es un "solo si face falló": siempre se evalúa como candidato y
+// compite por score contra face + geometric.
 //
 // smartcrop.js (vendorizado en vendor/smartcrop/smartcrop.js, v2.0.5,
 // MIT) NO es un modelo entrenado — es visión clásica (bordes Laplace +
@@ -79,13 +80,13 @@ export function warmUpSaliencyDetection() {
   getSmartcrop().catch(() => {});
 }
 
-// Devuelve el centro (fracción 0..1 del tamaño de la imagen) del
-// recorte cuadrado que smartcrop.js considera más "interesante"
-// (mayor combinación de bordes, contraste y saturación), o null si algo
-// falló cargando la librería o analizando la imagen. Nunca lanza —
-// mismo contrato que detectFaceCenterFrac(), para que quien llame a las
-// dos no necesite tratarlas distinto.
-export async function detectSaliencyCenterFrac(image) {
+/**
+ * Richer result for scoring: center + normalized smartcrop confidence.
+ * `conf` maps smartcrop's topCrop.score.total into roughly [0, 1] via a
+ * soft clamp — absolute totals vary by image; we only need a relative
+ * signal for wSal * saliencyScore.
+ */
+export async function detectSaliencyFrac(image) {
   try {
     const smartcrop = await getSmartcrop();
     const small = downscaleForDetection(image, DETECT_INPUT_SIZE);
@@ -93,11 +94,23 @@ export async function detectSaliencyCenterFrac(image) {
     const { topCrop } = await smartcrop.crop(small, { cropWidth: windowSize, cropHeight: windowSize });
     if (!topCrop) return null;
 
+    const total = topCrop.score && typeof topCrop.score.total === 'number' ? topCrop.score.total : 0;
+    // Empirically smartcrop totals often land ~0–1.5; clamp soft into [0,1].
+    const conf = Math.max(0, Math.min(1, total / 1.2));
+
     return {
       xFrac: (topCrop.x + topCrop.width / 2) / small.width,
       yFrac: (topCrop.y + topCrop.height / 2) / small.height,
+      conf,
     };
   } catch (err) {
     return null;
   }
+}
+
+// Back-compat wrapper: same contract as before (center or null).
+export async function detectSaliencyCenterFrac(image) {
+  const result = await detectSaliencyFrac(image);
+  if (!result) return null;
+  return { xFrac: result.xFrac, yFrac: result.yFrac };
 }

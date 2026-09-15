@@ -60,11 +60,15 @@ export function downscaleForDetection(image, maxSize) {
   return canvas;
 }
 
-// Devuelve el centro (como fracción 0..1 del tamaño de la imagen) del
-// área que cubren todos los rostros detectados, o null si no se detectó
-// ninguno o algo falló cargando el modelo. Nunca lanza — el llamador no
-// necesita un try/catch, un null ya significa "usa el centro geométrico".
-export async function detectFaceCenterFrac(image) {
+/**
+ * Detect all faces. Returns null if none / error.
+ *
+ * Multi-face policy (documented in centerScoring.js too): the returned
+ * center is the GROUP bbox midpoint (union of all boxes) so siblings stay
+ * in frame. `conf` is max detection score. Individual boxes are kept in
+ * `faces` (image-fraction coords) for the debug overlay.
+ */
+export async function detectFacesFrac(image) {
   try {
     const faceapi = await getDetector();
     const small = downscaleForDetection(image, DETECT_INPUT_SIZE);
@@ -76,18 +80,40 @@ export async function detectFaceCenterFrac(image) {
     let minY = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
-    for (const { box } of detections) {
+    let maxScore = 0;
+    const faces = [];
+
+    for (const det of detections) {
+      const box = det.box;
+      const score = typeof det.score === 'number' ? det.score : 0;
+      maxScore = Math.max(maxScore, score);
       minX = Math.min(minX, box.x);
       minY = Math.min(minY, box.y);
       maxX = Math.max(maxX, box.x + box.width);
       maxY = Math.max(maxY, box.y + box.height);
+      faces.push({
+        xFrac: box.x / small.width,
+        yFrac: box.y / small.height,
+        wFrac: box.width / small.width,
+        hFrac: box.height / small.height,
+        score,
+      });
     }
 
     return {
       xFrac: (minX + maxX) / 2 / small.width,
       yFrac: (minY + maxY) / 2 / small.height,
+      conf: maxScore,
+      faces,
     };
   } catch (err) {
     return null;
   }
+}
+
+// Back-compat wrapper: same contract as before (center or null).
+export async function detectFaceCenterFrac(image) {
+  const result = await detectFacesFrac(image);
+  if (!result) return null;
+  return { xFrac: result.xFrac, yFrac: result.yFrac };
 }

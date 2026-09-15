@@ -16,6 +16,7 @@ import {
   getSlotType,
 } from '../state.js';
 import { drawSlot } from '../render.js';
+import { drawDebugOverlay } from './debugOverlay.js';
 import { attachPhotoInteraction } from './slotController.js';
 import { openSlotPanel, closeSlotPanel } from './slotPanel.js';
 import { isPhotoLowRes } from '../resolutionCheck.js';
@@ -264,6 +265,7 @@ function renderSlot(index, slotEl, canvas, emptyIcon, warningBadge, spec) {
   // 300. drawSlot() nunca sabe (ni le importa) a qué escala se le llamó.
   const screenBox = specToBox(spec, canvas.width / 2, canvas.height / 2, EDITOR_DPI);
   drawSlot(ctx, slot, screenBox);
+  drawDebugOverlay(ctx, slot, screenBox, spec);
 
   const hasContent = slot.type !== 'empty' || Boolean(slot.text?.value);
   emptyIcon.style.display = hasContent ? 'none' : 'flex';

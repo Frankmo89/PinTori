@@ -11,8 +11,11 @@ import { subscribe } from './state.js';
 import { applyStaticStrings, getLang, setLang } from './i18n.js';
 import { showDownloadScreen } from './downloadScreen.js';
 import { initHero } from './hero.js';
+import { initDebugFromUrl } from './debug.js';
 
 runSelfTests();
+
+initDebugFromUrl();
 
 document.documentElement.lang = getLang();
 applyStaticStrings();
