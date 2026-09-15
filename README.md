@@ -1,14 +1,73 @@
 # PinTori
 
-App estática (HTML/CSS/JS, sin backend) que convierte fotos en una hoja
-lista para imprimir con diseños circulares para pines. Sin cuentas, sin
-subir nada a un servidor — todo corre en el navegador. Pensada para que
-un niño pueda usarla solo, con un adulto que abre la pestaña y se va.
+**Live demo:** [https://frankmo89.github.io/PinTori/](https://frankmo89.github.io/PinTori/)  
+*(GitHub Pages from `main` `/` — URL is live after this branch merges and Pages is enabled.)*
 
-Ver `SPEC.md` para la especificación completa del producto y `DESIGN.md`
-para el sistema de diseño.
+App estática (HTML/CSS/JS, sin backend) que convierte fotos en una hoja
+lista para imprimir con diseños para pines. Sin cuentas, sin subir nada —
+todo corre en el navegador. Pensada para que un niño pueda usarla solo.
+
+Ver `SPEC.md` para la especificación completa y `DESIGN.md` para el sistema
+de diseño (pastel). Geometría por defecto: **70 mm corte / 60 mm terminado**.
 
 ---
+
+## 15-second demo
+
+1. Open the [live demo](https://frankmo89.github.io/PinTori/).
+2. Tap **Empezar** (or **Probar con foto demo** to load a sample into the first slot).
+3. Tap an empty circle → add your own photo (or keep the demo).
+4. Drag / pinch to fine-tune; the dimmed ring is the fold-under zone.
+5. Tap **Generar PDF** → print at **100%** scale and check the calibration ruler on the sheet against a real ruler before cutting.
+
+![Before vs after face-centered crop](assets/before-after.svg)
+
+---
+
+## Case study (portfolio)
+
+### Problem
+
+Making pinback buttons at home usually means Canva/Photoshop templates or
+guesswork. Kids (and adults) hit the same four failures: print scale
+("fit to page"), faces lost in the fold-under bleed, off-center cuts, and
+wrong paper. PinTori designs against those failures — not with a help page,
+but with geometry and UI that make the right outcome the easy one.
+
+### Approach
+
+- **Client-only** static app: Canvas + jsPDF, no accounts, no uploads.
+- **Visible fold ring** while adjusting circle slots so important content
+  stays inside the finished 60 mm face.
+- **Calibration ruler** on every exported sheet (cm + inches) so scale is
+  physically verifiable.
+- **Auto framing**: face-api.js TinyFaceDetector → smartcrop.js → geometric
+  center. Silent fallbacks; never blocks the user.
+
+### face-api vs MediaPipe (MB tradeoff)
+
+MediaPipe Tasks Vision looked like the "default modern" choice until we
+weighed the binaries: ~11.4 MB deferred vs ~0.85 MB for face-api.js
+TinyFaceDetector. For "where is the face so we can center a crop," the
+extra MediaPipe precision is invisible on a phone; the download is not.
+We measured, then inverted the original plan. Full tables live under
+Technical details below.
+
+### Privacy
+
+Photos never leave the device. Models are vendored under `vendor/` — no
+CDN, no API calls. Detection runs on a downscaled canvas copy (320 px /
+256 px), not the full-resolution original.
+
+### Print accuracy
+
+Default mold measured to **70 mm cut / 60 mm finished / 60 mm safe zone**
+(not a generic bleed formula). Export is always 300 DPI. The printed
+ruler was physically confirmed against a steel ruler (2026-08-10).
+
+---
+
+## Technical details
 
 ## Encuadre automático (la pieza de AI/ML)
 

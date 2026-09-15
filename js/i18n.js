@@ -7,6 +7,12 @@
 const STRINGS = {
   es: {
     subtitle: 'Toca un círculo para agregar foto, texto, emoji o color.',
+    emptySlotHint: 'Toca para agregar',
+    heroTagline: 'Fotos a pines listos para imprimir — encuadre por rostro, sin subir nada.',
+    heroValue: 'Toca un círculo, ajusta el recorte con la zona de doblez visible, genera el PDF a escala exacta (70 mm corte / 60 mm terminado).',
+    heroStart: 'Empezar',
+    heroDemo: 'Probar con foto demo',
+    heroPrivacy: 'Todo corre en tu navegador. Nada se sube a un servidor.',
     generatePdf: 'Generar PDF',
     share: 'Compartir por correo',
     shareFallback: 'Tu navegador no puede adjuntar el PDF directo — se descargó, adjúntalo a mano a tu correo.',
@@ -52,6 +58,12 @@ const STRINGS = {
   },
   en: {
     subtitle: 'Tap a circle to add a photo, text, emoji, or color.',
+    emptySlotHint: 'Tap to add',
+    heroTagline: 'Photos to print-ready pinbacks — face-centered crop, nothing uploaded.',
+    heroValue: 'Tap a circle, adjust with the fold ring visible, generate a true-scale PDF (70 mm cut / 60 mm finished).',
+    heroStart: 'Start',
+    heroDemo: 'Try with demo photo',
+    heroPrivacy: 'Everything runs in your browser. Nothing is uploaded to a server.',
     generatePdf: 'Generate PDF',
     share: 'Share by email',
     shareFallback: "Your browser can't attach the PDF directly — it downloaded instead, attach it to your email manually.",

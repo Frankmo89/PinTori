@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 280" role="img" aria-labelledby="baTitle baDesc">
+  <title id="baTitle">PinTori before and after crop</title>
+  <desc id="baDesc">Left: geometric center crop clips the face. Right: face-centered crop keeps the subject in the safe zone.</desc>
+  <rect width="640" height="280" fill="#FBFCFE"/>
+  <!-- Before -->
+  <text x="160" y="28" text-anchor="middle" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#6B7078">Before — geometric center</text>
+  <circle cx="160" cy="150" r="90" fill="#E9F2FB" stroke="#CBD8E6" stroke-width="2" stroke-dasharray="6 6"/>
+  <circle cx="160" cy="150" r="72" fill="none" stroke="#B6DDA0" stroke-width="1.5" opacity="0.7"/>
+  <!-- off-center face clipped -->
+  <circle cx="195" cy="120" r="38" fill="#F5D7C3"/>
+  <circle cx="185" cy="112" r="4" fill="#33363D"/>
+  <circle cx="205" cy="112" r="4" fill="#33363D"/>
+  <path d="M186 130c6 5 16 5 22 0" fill="none" stroke="#B45A5A" stroke-width="2"/>
+  <text x="160" y="262" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#6B7078">Face near edge → lost in fold</text>
+  <!-- After -->
+  <text x="480" y="28" text-anchor="middle" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#23405C">After — face-centered</text>
+  <circle cx="480" cy="150" r="90" fill="#E9F2FB" stroke="#8FBCE6" stroke-width="2"/>
+  <circle cx="480" cy="150" r="72" fill="none" stroke="#B6DDA0" stroke-width="2"/>
+  <circle cx="480" cy="145" r="38" fill="#F5D7C3"/>
+  <circle cx="468" cy="137" r="4" fill="#33363D"/>
+  <circle cx="492" cy="137" r="4" fill="#33363D"/>
+  <path d="M468 155c6 5 18 5 24 0" fill="none" stroke="#B45A5A" stroke-width="2"/>
+  <text x="480" y="262" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#2E4A22">Subject stays in the 60 mm safe zone</text>
+  <!-- arrow -->
+  <path d="M270 150h80" stroke="#8FBCE6" stroke-width="3" stroke-linecap="round"/>
+  <path d="M340 140l20 10-20 10" fill="#8FBCE6"/>
+</svg>

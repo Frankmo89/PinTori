@@ -45,7 +45,8 @@ h1 {
   width: 18px;
   height: 18px;
   fill: var(--color-accent);
-  animation: sparkle-twinkle 2.4s ease-in-out infinite;
+  opacity: 0.45;
+  animation: sparkle-twinkle 4.8s ease-in-out infinite;
 }
 
 .sparkle-1 {
@@ -75,12 +76,12 @@ h1 {
 }
 
 @keyframes sparkle-twinkle {
-  0%, 100% { opacity: 0.35; transform: scale(0.85); }
-  50% { opacity: 1; transform: scale(1.1); }
+  0%, 100% { opacity: 0.25; transform: scale(0.9); }
+  50% { opacity: 0.55; transform: scale(1.05); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sparkle { animation: none; opacity: 0.8; }
+  .sparkle { animation: none !important; opacity: 0.4; }
 }
 
 .subtitle {

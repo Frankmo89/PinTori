@@ -4,12 +4,10 @@
 // visibles.
 
 import { getSlot, setSlot, clearSlot, getDefaultSlotType, setSlotTypeOverride } from '../state.js';
-import { computeFaceCenteredOffset, clampPhotoOffset } from '../render.js';
-import { detectFaceCenterFrac } from '../face/faceDetect.js';
-import { detectSaliencyCenterFrac } from '../face/saliencyDetect.js';
 import { isPhotoLowRes } from '../resolutionCheck.js';
 import { buildTypeSelector } from './typeSelector.js';
 import { t } from '../i18n.js';
+import { loadImageFromFile } from './photoLoader.js';
 
 const EMOJI_CHOICES = ['😀', '🎉', '🐶', '🌈', '⭐', '❤️', '🎈', '🦄'];
 const COLOR_CHOICES = ['#8FBCE6', '#B6DDA0', '#FFE9A8', '#F4C7D8'];
@@ -21,14 +19,6 @@ const TEXT_SIZE_CHOICES = [
 ];
 const DEFAULT_TEXT_COLOR = TEXT_COLOR_CHOICES[0];
 const DEFAULT_TEXT_SIZE = TEXT_SIZE_CHOICES[1].fontSizeFrac;
-
-// "cover" puro (scale=1) deja CERO margen para arrastrar en el eje más
-// ajustado de la foto — y en una foto cuadrada, cero margen en LOS DOS
-// ejes, porque ambos ejes empatan como el límite. Por eso "arrastrar no
-// hacía nada" con ciertas fotos: no era un bug de eventos, era que no
-// había a dónde moverse. Se arranca con un poco de zoom de más para que
-// siempre haya margen para arrastrar, sin importar la forma de la foto.
-const DEFAULT_PHOTO_SCALE = 1.15;
 
 const TABS = [
   { id: 'photo', labelKey: 'photo' },
@@ -114,41 +104,6 @@ export function closeSlotPanel() {
   if (returnFocusTarget) {
     returnFocusTarget.focus();
     returnFocusTarget = null;
-  }
-}
-
-async function loadImageFromFile(file, box) {
-  try {
-    const bitmap = await createImageBitmap(file);
-    const photo = {
-      image: bitmap,
-      blob: file, // se conserva para persistence.js — un ImageBitmap no se
-      // puede volver a convertir a Blob sin pasar por un canvas, más
-      // simple guardar el archivo original que ya tenemos a la mano.
-      naturalW: bitmap.width,
-      naturalH: bitmap.height,
-      offsetXFrac: 0,
-      offsetYFrac: 0,
-      scale: DEFAULT_PHOTO_SCALE,
-    };
-
-    // Cadena de encuadre (Prompt 18): rostro humano primero (más
-    // preciso, cuando aplica) -> sujeto genérico como respaldo (dibujos,
-    // anime, mascotas, objetos, paisajes) -> centro geométrico si
-    // ninguna de las dos encuentra nada o algo falló cargando. Silencioso
-    // en los tres casos, sin avisar nada — un slot sin subject center es
-    // el mismo resultado que un slot que nunca intentó detectar nada.
-    const subjectCenter = (await detectFaceCenterFrac(bitmap)) || (await detectSaliencyCenterFrac(bitmap));
-    if (subjectCenter) {
-      const offset = computeFaceCenteredOffset(bitmap.width, bitmap.height, subjectCenter);
-      const clamped = clampPhotoOffset({ ...photo, ...offset }, box);
-      photo.offsetXFrac = clamped.offsetXFrac;
-      photo.offsetYFrac = clamped.offsetYFrac;
-    }
-
-    return { photo, error: null };
-  } catch (err) {
-    return { photo: null, error: t('photoError') };
   }
 }
 

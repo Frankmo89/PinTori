@@ -28,7 +28,14 @@ import { t, onLangChange } from '../i18n.js';
 // ENTRE slots sean honestas — por eso cada slot mide su propio tamaño
 // en pantalla (EDITOR_DPI, ~2px/mm) en vez de forzarse todos a la misma
 // caja fija de antes.
+let gridContainerRef = null;
+
+export function refreshSlotGrid() {
+  if (gridContainerRef) renderAllSlots(gridContainerRef);
+}
+
 export function buildSlotGrid(container) {
+  gridContainerRef = container;
   const { sheetId } = getState();
   const defaultType = getDefaultSlotType();
   const slotCount = computeDefaultSlotCount({ slotType: defaultType, sheetId });
@@ -160,8 +167,15 @@ function buildSlotElement(container, index, slotCount) {
 
   const emptyIcon = document.createElement('div');
   emptyIcon.className = 'slot-empty-icon';
-  emptyIcon.textContent = '+';
   emptyIcon.setAttribute('aria-hidden', 'true');
+  const emptyPlus = document.createElement('span');
+  emptyPlus.className = 'slot-empty-plus';
+  emptyPlus.textContent = '+';
+  const emptyHint = document.createElement('span');
+  emptyHint.className = 'slot-empty-hint';
+  emptyHint.dataset.i18n = 'emptySlotHint';
+  emptyHint.textContent = t('emptySlotHint');
+  emptyIcon.append(emptyPlus, emptyHint);
 
   const warningBadge = document.createElement('div');
   warningBadge.className = 'slot-warning-badge';
@@ -253,6 +267,8 @@ function renderSlot(index, slotEl, canvas, emptyIcon, warningBadge, spec) {
 
   const hasContent = slot.type !== 'empty' || Boolean(slot.text?.value);
   emptyIcon.style.display = hasContent ? 'none' : 'flex';
+  const hintEl = emptyIcon.querySelector('.slot-empty-hint');
+  if (hintEl) hintEl.textContent = t('emptySlotHint');
 
   const printBox = specToBox(spec, 0, 0, DPI);
   const lowRes = slot.type === 'photo' && isPhotoLowRes(slot.photo, printBox.cutWidthPx, printBox.cutHeightPx);

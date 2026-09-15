@@ -1,0 +1,118 @@
+/* Landing hero — shown until Empezar / demo; editor stays hidden. */
+
+.hero {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4) var(--space-3);
+}
+
+.hero[hidden],
+.app-editor[hidden] {
+  display: none !important;
+}
+
+.hero-inner {
+  max-width: 560px;
+  width: 100%;
+  text-align: center;
+}
+
+.hero-brand {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.hero-brand h1 {
+  position: relative;
+  margin: 0;
+}
+
+.hero-lang {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+}
+
+.hero-tagline {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2) 0;
+  line-height: 1.35;
+}
+
+.hero-value {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-4) 0;
+  line-height: 1.5;
+}
+
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+@media (min-width: 480px) {
+  .hero-actions {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+.btn-secondary {
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  background: var(--color-surface);
+  color: var(--color-primary-text);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  min-height: var(--touch-target-min);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface-warm);
+  border-color: var(--color-primary-hover);
+}
+
+.btn-secondary:focus-visible {
+  outline: 3px solid var(--color-primary-text);
+  outline-offset: 2px;
+}
+
+.btn-secondary:disabled,
+.btn-generate:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.hero-privacy {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.app-editor {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-3);
+}
+
+/* When editor is shown, main padding lives on .app-editor; body still has gradient. */
+body:has(.app-editor:not([hidden])) main.app-editor {
+  /* already padded */
+}
