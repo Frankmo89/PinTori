@@ -30,25 +30,77 @@
   <link rel="stylesheet" href="styles/base.css" />
   <link rel="stylesheet" href="styles/editor.css" />
   <link rel="stylesheet" href="styles/modal.css" />
-  <link rel="stylesheet" href="styles/hero.css" />
+  <link rel="stylesheet" href="styles/hero.css?v=2" />
 </head>
 <body>
   <section id="hero" class="hero" aria-labelledby="hero-title">
+    <div class="hero-floaters" aria-hidden="true">
+      <span class="hero-floater hero-floater--a"></span>
+      <span class="hero-floater hero-floater--b"></span>
+      <span class="hero-floater hero-floater--c"></span>
+      <span class="hero-floater hero-floater--d"></span>
+      <span class="hero-floater hero-floater--e"></span>
+      <span class="hero-floater hero-floater--pin"></span>
+    </div>
+
+    <button type="button" id="lang-toggle-btn" class="btn-link hero-lang" data-i18n="langToggle" aria-label="Switch language / Cambiar idioma">English</button>
+
     <div class="hero-inner">
+      <div class="hero-art" aria-hidden="true">
+        <svg viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg" role="img">
+          <title>Tres pines con fotos</title>
+          <!-- Back pin (mint) -->
+          <g transform="translate(48, 52)">
+            <circle cx="70" cy="70" r="68" fill="#B6DDA0" />
+            <circle cx="70" cy="70" r="58" fill="none" stroke="rgba(46,74,34,0.28)" stroke-width="6" stroke-dasharray="4 6" />
+            <circle cx="70" cy="62" r="28" fill="#7FB86A" />
+            <ellipse cx="70" cy="108" rx="36" ry="22" fill="#7FB86A" />
+            <circle cx="60" cy="58" r="3.5" fill="#2E4A22" opacity="0.55" />
+            <circle cx="80" cy="58" r="3.5" fill="#2E4A22" opacity="0.55" />
+            <path d="M62 70 Q70 78 78 70" fill="none" stroke="#2E4A22" stroke-width="2.5" stroke-linecap="round" opacity="0.55" />
+          </g>
+          <!-- Mid pin (yellow) -->
+          <g transform="translate(118, 28)">
+            <circle cx="70" cy="70" r="68" fill="#FFE9A8" />
+            <circle cx="70" cy="70" r="58" fill="none" stroke="rgba(92,74,18,0.3)" stroke-width="6" stroke-dasharray="4 6" />
+            <circle cx="70" cy="60" r="26" fill="#E8C96A" />
+            <ellipse cx="70" cy="105" rx="34" ry="20" fill="#E8C96A" />
+            <circle cx="61" cy="56" r="3.2" fill="#5C4A12" opacity="0.55" />
+            <circle cx="79" cy="56" r="3.2" fill="#5C4A12" opacity="0.55" />
+            <path d="M63 68 Q70 75 77 68" fill="none" stroke="#5C4A12" stroke-width="2.5" stroke-linecap="round" opacity="0.55" />
+          </g>
+          <!-- Front pin (blue) -->
+          <g transform="translate(72, 88)">
+            <circle cx="70" cy="70" r="72" fill="#8FBCE6" />
+            <circle cx="70" cy="70" r="61" fill="none" stroke="rgba(35,64,92,0.35)" stroke-width="7" stroke-dasharray="5 7" />
+            <circle cx="70" cy="62" r="30" fill="#6A9EC8" />
+            <ellipse cx="70" cy="112" rx="38" ry="24" fill="#6A9EC8" />
+            <circle cx="59" cy="58" r="4" fill="#23405C" opacity="0.6" />
+            <circle cx="81" cy="58" r="4" fill="#23405C" opacity="0.6" />
+            <path d="M60 72 Q70 82 80 72" fill="none" stroke="#23405C" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+          </g>
+          <!-- Soft sparkles -->
+          <path d="M36 48 L38.2 54.5 L45 56.5 L38.2 58.5 L36 65 L33.8 58.5 L27 56.5 L33.8 54.5 Z" fill="#8FBCE6" opacity="0.7" />
+          <path d="M232 168 L233.6 172.8 L238.5 174.5 L233.6 176.2 L232 181 L230.4 176.2 L225.5 174.5 L230.4 172.8 Z" fill="#FFE9A8" opacity="0.85" />
+          <path d="M248 72 L249.4 76 L253.5 77.4 L249.4 78.8 L248 82.8 L246.6 78.8 L242.5 77.4 L246.6 76 Z" fill="#B6DDA0" opacity="0.8" />
+        </svg>
+      </div>
+
       <div class="hero-brand">
         <h1 id="hero-title">PinTori
           <svg class="sparkle sparkle-1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
           <svg class="sparkle sparkle-2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
-          <svg class="sparkle sparkle-3" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z"/></svg>
         </h1>
-        <button type="button" id="lang-toggle-btn" class="btn-link hero-lang" data-i18n="langToggle" aria-label="Switch language / Cambiar idioma">English</button>
       </div>
-      <p class="hero-tagline" data-i18n="heroTagline">Fotos a pines listos para imprimir — encuadre por rostro, sin subir nada.</p>
-      <p class="hero-value" data-i18n="heroValue">Toca un círculo, ajusta el recorte con la zona de doblez visible, genera el PDF a escala exacta (70 mm corte / 60 mm terminado).</p>
+
+      <p class="hero-tagline" data-i18n="heroTagline">Fotos a pines listos para imprimir.</p>
+      <p class="hero-value" data-i18n="heroValue">Encuadre por rostro, zona de doblez visible, PDF a escala exacta.</p>
+
       <div class="hero-actions">
-        <button type="button" id="hero-start-btn" class="btn-generate" data-i18n="heroStart">Empezar</button>
-        <button type="button" id="hero-demo-btn" class="btn-secondary" data-i18n="heroDemo">Probar con foto demo</button>
+        <button type="button" id="hero-start-btn" class="btn-generate hero-cta-primary" data-i18n="heroStart">Empezar</button>
+        <button type="button" id="hero-demo-btn" class="btn-secondary hero-cta-secondary" data-i18n="heroDemo">Probar demo</button>
       </div>
+
       <p class="hero-privacy" data-i18n="heroPrivacy">Todo corre en tu navegador. Nada se sube a un servidor.</p>
     </div>
   </section>
@@ -74,6 +126,6 @@
       <button type="button" id="export-png-btn" class="btn-link" data-i18n="downloadPng">Descargar PNG</button>
     </div>
   </main>
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>
